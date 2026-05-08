@@ -298,7 +298,6 @@ function toPascal(value) {
 }
 
 function render() {
-  renderAuth();
   renderAgentSelect();
   renderDashboard();
   renderBuilder();
@@ -307,11 +306,6 @@ function render() {
   renderPublish();
   renderAnalytics();
   renderIcons();
-}
-
-function renderAuth() {
-  $("#googleLoginBtn").classList.toggle("hidden", Boolean(state.user));
-  $("#logoutBtn").classList.toggle("hidden", !state.user);
 }
 
 function renderAgentSelect() {
@@ -529,7 +523,7 @@ function renderChat() {
 
 function buildSuggestions(agent, latest) {
   if (latest?.suggestions?.length) return latest.suggestions;
-  if (latest?.answer) return buildFollowUpSuggestions(latest, agent);
+  if (latest?.question || latest?.answer) return buildFollowUpSuggestions(latest, agent);
 
   const isAiraSupport = agent.name === "Aira Support Assistant" || agent.templateId === "support";
   const base = isAiraSupport
@@ -551,6 +545,7 @@ function buildSuggestions(agent, latest) {
 
 function buildFollowUpSuggestions(message, agent) {
   const text = `${message.question} ${message.answer}`.toLowerCase();
+  const question = message.question || "";
 
   if (/active|passive|grammar|sentence|pronoun|verb|english/.test(text) || agent.templateId === "teacher") {
     return [
@@ -565,6 +560,14 @@ function buildFollowUpSuggestions(message, agent) {
       "Show my publish checklist.",
       "How do I share this agent?",
       "What should I test first?"
+    ];
+  }
+
+  if (/support agent|customer support|helpdesk|support bot/.test(text) || agent.templateId === "support") {
+    return [
+      "Help me define the agent profile.",
+      "What support documents should I upload?",
+      "Create 3 test questions for it."
     ];
   }
 
@@ -585,10 +588,18 @@ function buildFollowUpSuggestions(message, agent) {
   }
 
   return [
-    "Give me a shorter summary.",
-    "Show the next step.",
-    "Create a follow-up example."
+    `Go deeper on ${shortTopic(question)}.`,
+    "Give me a simpler explanation.",
+    "What should I ask next?"
   ];
+}
+
+function shortTopic(question) {
+  const cleaned = String(question)
+    .replace(/[?!.]/g, "")
+    .replace(/^(what is|what are|how do i|how to|explain|tell me about|difference between)\s+/i, "")
+    .trim();
+  return cleaned.split(/\s+/).slice(0, 5).join(" ") || "this";
 }
 
 function renderPublish() {
@@ -819,6 +830,7 @@ async function answerQuestion(question) {
     responseTime: (performance.now() - started) / 1000 + 0.4,
     createdAt: new Date().toISOString()
   };
+  record.suggestions = buildFollowUpSuggestions(record, agent);
   state.conversations.push(record);
   lastQuestion = question;
   saveState();
@@ -1147,18 +1159,6 @@ function setLatestFeedback(value) {
 }
 
 window.addEventListener("hashchange", () => setRoute(location.hash.replace("#", "") || "dashboard"));
-
-$("#googleLoginBtn").addEventListener("click", () => {
-  state.user = { name: "Demo User", email: "demo@gmail.com", provider: "google" };
-  saveState();
-  render();
-});
-
-$("#logoutBtn").addEventListener("click", () => {
-  state.user = null;
-  saveState();
-  render();
-});
 
 $("#newAgentBtn").addEventListener("click", createAgent);
 $("#activeAgentSelect").addEventListener("change", (event) => {
