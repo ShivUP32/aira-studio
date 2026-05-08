@@ -19,9 +19,24 @@ Open `http://localhost:4173`.
 - Database: Supabase Postgres free tier
 - Vector search: Supabase pgvector
 - File storage: Supabase Storage
-- LLM: Gemini API free tier, with OpenAI-compatible abstraction if needed
+- LLM: Groq as the primary chat model, Gemini as fallback
 - Voice: Browser Web Speech API for STT/TTS in the MVP
 - Source control and deployment: GitHub + Vercel
+
+## LLM Setup
+
+The app calls `/api/chat`, a Vercel serverless function. Do not put LLM keys in browser code.
+
+Add these environment variables in Vercel:
+
+```text
+GROQ_API_KEY=...
+GROQ_MODEL=llama-3.1-8b-instant
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Groq is used first. If Groq fails or is not configured, the API tries Gemini. If neither provider is available, the browser keeps using the local demo retrieval answer.
 
 ## App Flow
 
