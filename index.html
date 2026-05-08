@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aira Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="#dashboard" aria-label="Aira Studio dashboard">
+          <span class="brand-mark">A</span>
+          <span>
+            <strong>Aira Studio</strong>
+            <small>Agent Builder</small>
+          </span>
+        </a>
+        <nav class="nav-list">
+          <a class="nav-link active" href="#dashboard" data-route="dashboard">
+            <span data-icon="layout-dashboard"></span>
+            Dashboard
+          </a>
+          <a class="nav-link" href="#builder" data-route="builder">
+            <span data-icon="bot"></span>
+            Create Agent
+          </a>
+          <a class="nav-link" href="#test" data-route="test">
+            <span data-icon="message-circle"></span>
+            Test Agent
+          </a>
+          <a class="nav-link" href="#publish" data-route="publish">
+            <span data-icon="send"></span>
+            Publish
+          </a>
+          <a class="nav-link" href="#analytics" data-route="analytics">
+            <span data-icon="chart-no-axes-combined"></span>
+            Analytics
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <button class="ghost-button full" id="googleLoginBtn">
+            <span data-icon="mail"></span>
+            Continue with Google
+          </button>
+          <button class="icon-text-button full hidden" id="logoutBtn">
+            <span data-icon="log-out"></span>
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">No-code RAG + voice agents</p>
+            <h1 id="pageTitle">Dashboard</h1>
+          </div>
+          <div class="topbar-actions">
+            <select id="activeAgentSelect" aria-label="Active agent"></select>
+            <button class="primary-button" id="newAgentBtn">
+              <span data-icon="plus"></span>
+              New Agent
+            </button>
+          </div>
+        </header>
+
+        <section id="dashboard" class="route active">
+          <div class="hero-band">
+            <div class="hero-copy">
+              <div class="hero-badges">
+                <span>3-step agent builder</span>
+                <span>PDF to RAG</span>
+                <span>Voice ready</span>
+              </div>
+              <p class="eyebrow">Aira Studio</p>
+              <h2>Build AI agents from your documents in minutes.</h2>
+              <div class="hero-actions">
+                <a class="primary-button" href="#builder">
+                  <span data-icon="sparkles"></span>
+                  Start Building
+                </a>
+                <a class="secondary-button" href="#test">
+                  <span data-icon="play"></span>
+                  Try Chat
+                </a>
+              </div>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+              <div class="idea-console">
+                <div class="console-top">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <strong>Agent prompt</strong>
+                </div>
+                <div class="prompt-box">
+                  Create a support agent from my product PDF. Make it friendly, concise, and able to answer with sources.
+                </div>
+                <div class="pipeline">
+                  <div>
+                    <span data-icon="file-text"></span>
+                    Upload
+                  </div>
+                  <div>
+                    <span data-icon="scissors"></span>
+                    Chunk
+                  </div>
+                  <div>
+                    <span data-icon="database"></span>
+                    Store
+                  </div>
+                  <div>
+                    <span data-icon="bot"></span>
+                    Chat
+                  </div>
+                </div>
+                <div class="console-result">
+                  <span class="pulse-dot"></span>
+                  Aira Support Assistant is ready to test
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metrics-grid" id="dashboardMetrics"></div>
+          <div class="two-column">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Agents</h3>
+                <a href="#builder">Create</a>
+              </div>
+              <div id="agentList" class="agent-list"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Service Stack</h3>
+                <span class="status-pill">Free tier ready</span>
+              </div>
+              <div class="stack-grid">
+                <span>Firebase Auth</span>
+                <span>Supabase Postgres</span>
+                <span>Supabase Storage</span>
+                <span>pgvector</span>
+                <span>Gemini API</span>
+                <span>Web Speech API</span>
+                <span>Vercel</span>
+                <span>GitHub</span>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="builder" class="route">
+          <div class="builder-layout">
+            <form id="agentForm" class="panel form-panel">
+              <div class="step-header">
+                <span class="step-number">1</span>
+                <div>
+                  <h3>Agent Profile</h3>
+                  <p>Name, role, goal, tone, and guardrails.</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <label>
+                  Agent name
+                  <input required name="name" placeholder="Aira Support Assistant" />
+                </label>
+                <label>
+                  Agent type
+                  <select name="type">
+                    <option>Support Agent</option>
+                    <option>Sales Agent</option>
+                    <option>Learning Companion</option>
+                    <option>FAQ Assistant</option>
+                    <option>Personal Assistant</option>
+                  </select>
+                </label>
+                <label class="wide">
+                  Description
+                  <textarea name="description" rows="3" placeholder="Helps customers find accurate answers from product PDFs."></textarea>
+                </label>
+                <label>
+                  Persona tone
+                  <select name="tone">
+                    <option>Friendly and concise</option>
+                    <option>Professional and calm</option>
+                    <option>Warm teacher</option>
+                    <option>Direct sales advisor</option>
+                    <option>Technical expert</option>
+                  </select>
+                </label>
+                <label>
+                  Voice persona
+                  <select name="voice">
+                    <option>Browser default</option>
+                    <option>Calm guide</option>
+                    <option>Bright helper</option>
+                    <option>Formal assistant</option>
+                  </select>
+                </label>
+                <label class="wide">
+                  Goal
+                  <textarea name="goal" rows="3" placeholder="Resolve user questions using uploaded knowledge and ask for clarification when context is missing."></textarea>
+                </label>
+                <label>
+                  Greeting
+                  <input name="greeting" placeholder="Hi, I’m Aira. How can I help?" />
+                </label>
+                <label>
+                  Fallback
+                  <input name="fallback" placeholder="I don’t have enough context yet. Could you add detail?" />
+                </label>
+              </div>
+
+              <div class="step-header">
+                <span class="step-number">2</span>
+                <div>
+                  <h3>Knowledge</h3>
+                  <p>PDF, TXT, or manual FAQ input.</p>
+                </div>
+              </div>
+              <div class="knowledge-zone" id="dropZone">
+                <input id="knowledgeFiles" type="file" accept=".pdf,.txt,text/plain,application/pdf" multiple />
+                <span data-icon="upload-cloud"></span>
+                <strong>Drop files or choose PDFs/TXT</strong>
+                <small>PDF extraction uses the browser when available; TXT works offline.</small>
+              </div>
+              <div id="fileList" class="file-list"></div>
+
+              <label class="manual-faq">
+                Manual FAQ
+                <textarea name="manualFaq" rows="6" placeholder="Q: What is the refund policy?&#10;A: Refunds are available within 14 days..."></textarea>
+              </label>
+
+              <div class="form-actions">
+                <button type="button" class="secondary-button" id="resetDemoBtn">
+                  <span data-icon="rotate-ccw"></span>
+                  Reset Demo
+                </button>
+                <button type="submit" class="primary-button">
+                  <span data-icon="save"></span>
+                  Save Agent
+                </button>
+              </div>
+            </form>
+
+            <aside class="panel prompt-preview">
+              <div class="panel-heading">
+                <h3>System Prompt</h3>
+                <button class="icon-button" id="copyPromptBtn" aria-label="Copy prompt">
+                  <span data-icon="copy"></span>
+                </button>
+              </div>
+              <pre id="promptPreview"></pre>
+            </aside>
+          </div>
+        </section>
+
+        <section id="test" class="route">
+          <div class="chat-layout">
+            <section class="panel chat-panel">
+              <div class="panel-heading">
+                <h3 id="chatAgentName">Agent Test</h3>
+                <div class="chat-actions">
+                  <button class="icon-button" id="retryBtn" aria-label="Retry last response">
+                    <span data-icon="refresh-cw"></span>
+                  </button>
+                  <button class="icon-button" id="micBtn" aria-label="Push to talk">
+                    <span data-icon="mic"></span>
+                  </button>
+                </div>
+              </div>
+              <div id="chatMessages" class="chat-messages"></div>
+              <div id="suggestedQuestions" class="suggested-questions"></div>
+              <form id="chatForm" class="chat-input-row">
+                <input id="chatInput" placeholder="Ask about the uploaded knowledge..." autocomplete="off" />
+                <button class="primary-button" type="submit" aria-label="Send message">
+                  <span data-icon="send-horizontal"></span>
+                </button>
+              </form>
+            </section>
+
+            <aside class="panel source-panel">
+              <div class="panel-heading">
+                <h3>Retrieved Sources</h3>
+                <span id="confidenceBadge" class="status-pill">0%</span>
+              </div>
+              <div id="sourceList" class="source-list"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="publish" class="route">
+          <div class="publish-layout">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Publish Agent</h3>
+                <span id="publishState" class="status-pill">Draft</span>
+              </div>
+              <div class="publish-controls">
+                <label class="toggle-row">
+                  <input type="checkbox" id="publishToggle" />
+                  <span>Public share URL</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="embedToggle" checked />
+                  <span>Embeddable widget</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="accessToggle" />
+                  <span>Require signed-in users</span>
+                </label>
+              </div>
+              <div class="copy-field">
+                <input id="shareUrl" readonly />
+                <button class="icon-button" id="copyShareBtn" aria-label="Copy share URL">
+                  <span data-icon="copy"></span>
+                </button>
+              </div>
+              <pre id="embedCode"></pre>
+            </section>
+            <section class="widget-preview">
+              <div class="mini-widget">
+                <div class="mini-header">
+                  <span class="brand-mark small">A</span>
+                  <strong id="widgetAgentName">Aira Agent</strong>
+                </div>
+                <p id="widgetGreeting">Hi, I’m Aira. How can I help?</p>
+                <button class="primary-button full">
+                  <span data-icon="message-circle"></span>
+                  Open Chat
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="analytics" class="route">
+          <div class="metrics-grid" id="analyticsMetrics"></div>
+          <div class="two-column">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Confidence Distribution</h3>
+              </div>
+              <div id="confidenceChart" class="bar-chart"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Unknown Questions</h3>
+              </div>
+              <div id="unknownQuestions" class="unknown-list"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="metricTemplate">
+      <article class="metric-card">
+        <span></span>
+        <strong></strong>
+        <small></small>
+      </article>
+    </template>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
