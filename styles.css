@@ -657,12 +657,28 @@ select:focus {
   gap: 10px;
 }
 
-.stack-grid span {
+.stack-grid span,
+.comparison-list span,
+.flow-list span {
   padding: 11px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.045);
   font-weight: 700;
+}
+
+.product-positioning {
+  margin-top: 18px;
+}
+
+.comparison-list,
+.flow-list {
+  display: grid;
+  gap: 10px;
+}
+
+.comparison-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .form-panel {
@@ -922,7 +938,15 @@ pre {
   margin-bottom: 12px;
 }
 
-.suggested-questions button {
+.test-library {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.suggested-questions button,
+.test-library button {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 12px;
@@ -960,6 +984,36 @@ pre {
 
 .source-panel {
   align-self: start;
+}
+
+.reasoning-card {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.reasoning-card.warning {
+  border-color: rgba(242, 184, 75, 0.34);
+}
+
+.reasoning-card small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.reasoning-card small b {
+  color: var(--text);
+}
+
+.secondary-button.compact {
+  width: fit-content;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.82rem;
 }
 
 .feedback-panel {
@@ -1133,6 +1187,7 @@ pre {
   .metrics-grid,
   .template-grid,
   .wizard-progress,
+  .comparison-list,
   .stack-grid {
     grid-template-columns: 1fr;
   }

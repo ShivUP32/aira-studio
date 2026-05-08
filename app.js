@@ -1,6 +1,22 @@
 const STORAGE_KEY = "aira-studio-state";
 const AIRA_SUPPORT_KB_VERSION = 2;
 let builderStep = 1;
+let voiceEnabled = true;
+
+const testQuestionLibrary = {
+  "upload-readiness": {
+    question: "What should I upload for this agent?",
+    expected: "The agent should recommend focused FAQ, product, policy, or help documents and explain that clearer source material improves answer confidence."
+  },
+  "source-backed": {
+    question: "Give me an answer with sources.",
+    expected: "The agent should answer from retrieved knowledge, show confidence, and expose the source snippets used for the response."
+  },
+  "fallback-behavior": {
+    question: "What if the answer is not in my documents?",
+    expected: "The agent should avoid guessing, explain what is missing, and suggest adding a manual FAQ or clearer document."
+  }
+};
 
 const agentTemplates = [
   {
@@ -506,6 +522,7 @@ function renderChat() {
   $("#thumbsDownBtn").disabled = !latest;
   $("#thumbsUpBtn").classList.toggle("selected", latest?.feedback === "up");
   $("#thumbsDownBtn").classList.toggle("selected", latest?.feedback === "down");
+  $("#speakToggleBtn").classList.toggle("selected", voiceEnabled);
   $("#sourceList").innerHTML =
     latest?.sources
       .map(
@@ -519,6 +536,9 @@ function renderChat() {
         </div>`
       )
       .join("") || "<p>No retrieval yet.</p>";
+  $("#confidenceReasoning").innerHTML = latest ? renderConfidenceReasoning(latest) : "";
+  $("#qaReview").innerHTML = latest ? renderQaReview(latest) : "";
+  $("#improvementLoop").innerHTML = latest ? renderImprovementLoop(latest) : "";
 }
 
 function buildSuggestions(agent, latest) {
@@ -543,11 +563,54 @@ function buildSuggestions(agent, latest) {
   return base;
 }
 
+function renderConfidenceReasoning(message) {
+  const bucket = message.confidence >= 70 ? "High" : message.confidence >= 45 ? "Medium" : "Low";
+  const detail =
+    message.confidence >= 70
+      ? "The answer is likely grounded in retrieved knowledge."
+      : message.confidence >= 45
+        ? "The answer may be useful, but should be reviewed before publishing."
+        : "The answer needs better knowledge or a manual FAQ addition.";
+  return `
+    <div class="reasoning-card">
+      <strong>${bucket} confidence</strong>
+      <small>${detail}</small>
+      <small>Voice latency: about ${Math.max(0.4, message.responseTime || 0.4).toFixed(1)}s.</small>
+    </div>`;
+}
+
+function renderQaReview(message) {
+  if (!message.expected) return "";
+  return `
+    <div class="reasoning-card">
+      <strong>Expected vs actual</strong>
+      <small><b>Expected:</b> ${escapeHtml(message.expected)}</small>
+      <small><b>Actual:</b> ${escapeHtml(stripHtmlPreview(normalizeAnswerText(message.answer || "Response is still generating.")))}</small>
+    </div>`;
+}
+
+function renderImprovementLoop(message) {
+  if (message.confidence >= 60 && message.feedback !== "down") {
+    return `
+      <div class="reasoning-card">
+        <strong>Next improvement</strong>
+        <small>Save this as a passing test question before publishing.</small>
+      </div>`;
+  }
+
+  return `
+    <div class="reasoning-card warning">
+      <strong>Add failed answer to FAQ</strong>
+      <small>Turn this question into a manual FAQ or upload a clearer source document.</small>
+      <button type="button" class="secondary-button compact" data-add-failed-faq>Add to FAQ draft</button>
+    </div>`;
+}
+
 function buildFollowUpSuggestions(message, agent) {
   const text = `${message.question} ${message.answer}`.toLowerCase();
   const question = message.question || "";
 
-  if (/active|passive|grammar|sentence|pronoun|verb|english/.test(text) || agent.templateId === "teacher") {
+  if (/active|passive|grammar|sentence|pronoun|verb|english/.test(text)) {
     return [
       "Give me 5 practice questions.",
       "Explain it in simpler words.",
@@ -563,14 +626,6 @@ function buildFollowUpSuggestions(message, agent) {
     ];
   }
 
-  if (/support agent|customer support|helpdesk|support bot/.test(text) || agent.templateId === "support") {
-    return [
-      "Help me define the agent profile.",
-      "What support documents should I upload?",
-      "Create 3 test questions for it."
-    ];
-  }
-
   if (/upload|knowledge|pdf|document|source/.test(text)) {
     return [
       "What files should I upload?",
@@ -579,7 +634,39 @@ function buildFollowUpSuggestions(message, agent) {
     ];
   }
 
-  if (/sales|lead|pricing|prospect/.test(text) || agent.templateId === "sales") {
+  if (/support agent|customer support|helpdesk|support bot/.test(text)) {
+    return [
+      "Help me define the agent profile.",
+      "What support documents should I upload?",
+      "Create 3 test questions for it."
+    ];
+  }
+
+  if (/sales|lead|pricing|prospect/.test(text)) {
+    return [
+      "Create qualifying questions.",
+      "Draft a sales greeting.",
+      "What sales docs should I upload?"
+    ];
+  }
+
+  if (agent.templateId === "teacher") {
+    return [
+      "Give me 5 practice questions.",
+      "Explain it in simpler words.",
+      "Check my own example sentence."
+    ];
+  }
+
+  if (agent.templateId === "support") {
+    return [
+      "Help me define the agent profile.",
+      "What support documents should I upload?",
+      "Create 3 test questions for it."
+    ];
+  }
+
+  if (agent.templateId === "sales") {
     return [
       "Create qualifying questions.",
       "Draft a sales greeting.",
@@ -685,8 +772,12 @@ function renderAnalytics() {
   const voice = state.events.filter((item) => item.agentId === agent.id && item.type === "voice").length;
   const metrics = [
     ["Total conversations", conversations.length, "Chat sessions"],
-    ["Avg response time", `${(avgResponse || 0).toFixed(1)}s`, "Local simulation"],
+    ["Resolution rate", `${Math.round((conversations.filter((item) => item.confidence >= 60).length / Math.max(1, conversations.length)) * 100)}%`, "60%+ confidence"],
+    ["Low-confidence rate", `${Math.round((conversations.filter((item) => item.confidence < 45).length / Math.max(1, conversations.length)) * 100)}%`, "Needs review"],
+    ["Human escalation", conversations.filter((item) => item.confidence < 35 || item.feedback === "down").length, "Likely needed"],
+    ["Feedback ratio", `${conversations.filter((item) => item.feedback === "up").length}/${conversations.filter((item) => item.feedback === "down").length}`, "Positive / negative"],
     ["Voice usage", voice, "Mic interactions"],
+    ["Avg response time", `${(avgResponse || 0).toFixed(1)}s`, "Local simulation"],
     ["Avg confidence", `${Math.round(average(conversations.map((item) => item.confidence)) || 0)}%`, "Retrieval score"]
   ];
   $("#analyticsMetrics").innerHTML = metrics.map(metricCard).join("");
@@ -714,6 +805,20 @@ function renderAnalytics() {
       .slice(-6)
       .map((item) => `<div class="unknown-item">${escapeHtml(item.question)}</div>`)
       .join("") || "<p>No unknown questions yet.</p>";
+
+  $("#failedIntents").innerHTML =
+    conversations
+      .filter((item) => item.confidence < 45 || item.feedback === "down")
+      .slice(-6)
+      .map((item) => `<div class="unknown-item">${escapeHtml(shortTopic(item.question))}</div>`)
+      .join("") || "<p>No failed intents yet.</p>";
+
+  $("#analyticsSuggestions").innerHTML =
+    conversations.some((item) => item.confidence < 45)
+      ? `<div class="unknown-item">Add low-confidence questions as Manual FAQ entries.</div>
+         <div class="unknown-item">Upload clearer source documents for repeated unknowns.</div>
+         <div class="unknown-item">Retest failed answers before publishing.</div>`
+      : `<div class="unknown-item">Keep testing common user questions to build confidence.</div>`;
 }
 
 async function handleFiles(files) {
@@ -811,7 +916,7 @@ function createAgent() {
   setRoute("builder");
 }
 
-async function answerQuestion(question) {
+async function answerQuestion(question, options = {}) {
   const started = performance.now();
   const agent = activeAgent();
   const retrieval = retrieve(question, agent.knowledge);
@@ -826,6 +931,8 @@ async function answerQuestion(question) {
     sources: retrieval.sources,
     provider: llmResult.provider || "local-demo",
     model: llmResult.model || "browser-retrieval",
+    expected: options.expected || "",
+    testId: options.testId || "",
     streaming: true,
     responseTime: (performance.now() - started) / 1000 + 0.4,
     createdAt: new Date().toISOString()
@@ -858,7 +965,7 @@ function wait(ms) {
 }
 
 async function speakAndRevealChunk(record, chunk, agent) {
-  const speechPromise = speakChunk(chunk.speech, agent);
+  const speechPromise = voiceEnabled ? speakChunk(chunk.speech, agent) : Promise.resolve();
   const tokens = chunk.text.match(/\S+\s*|\n+/g) || [chunk.text];
   const duration = estimateSpeechDuration(chunk.speech);
   const delay = Math.min(140, Math.max(36, duration / Math.max(1, tokens.length)));
@@ -925,6 +1032,8 @@ function formatAssistantAnswer(text) {
 
 function normalizeAnswerText(text) {
   return String(text)
+    .replace(/^[\s*_#.-]{6,}$/gm, "")
+    .replace(/([*_#.-])\1{5,}/g, "")
     .replace(/\s+\*\*([^*]+)\*\*/g, "\n\n**$1**\n")
     .replace(/(?:^|\s)-\s+(?=[A-Z0-9])/g, "\n- ")
     .replace(/\s+(To summarize:)/gi, "\n\n**Summary**\n")
@@ -1116,6 +1225,11 @@ function average(values) {
   return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : 0;
 }
 
+function stripHtmlPreview(value) {
+  const preview = String(value).replace(/\s+/g, " ").trim();
+  return preview.length > 220 ? `${preview.slice(0, 220).trim()}...` : preview;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -1156,6 +1270,32 @@ function setLatestFeedback(value) {
   });
   saveState();
   renderChat();
+}
+
+function addLatestFailedAnswerToFaq() {
+  const agent = activeAgent();
+  const latest = state.conversations.filter((item) => item.agentId === agent.id).at(-1);
+  if (!latest) return;
+  const faqDraft = `Q: ${latest.question}\nA: Add the correct source-backed answer here before publishing.`;
+  agent.knowledge.push({
+    id: crypto.randomUUID(),
+    title: "Failed answer FAQ draft",
+    type: "faq",
+    text: faqDraft,
+    size: faqDraft.length,
+    status: "Needs correction",
+    chunkCount: 1,
+    updatedAt: new Date().toISOString()
+  });
+  state.events.push({
+    id: crypto.randomUUID(),
+    agentId: agent.id,
+    type: "faq-suggestion",
+    payload: { conversationId: latest.id },
+    createdAt: new Date().toISOString()
+  });
+  saveState();
+  render();
 }
 
 window.addEventListener("hashchange", () => setRoute(location.hash.replace("#", "") || "dashboard"));
@@ -1256,6 +1396,23 @@ $("#micBtn").addEventListener("click", startVoice);
 $("#copyShareBtn").addEventListener("click", () => copyText($("#shareUrl").value));
 $("#thumbsUpBtn").addEventListener("click", () => setLatestFeedback("up"));
 $("#thumbsDownBtn").addEventListener("click", () => setLatestFeedback("down"));
+$("#speakToggleBtn").addEventListener("click", () => {
+  voiceEnabled = !voiceEnabled;
+  if (!voiceEnabled) window.speechSynthesis?.cancel();
+  renderChat();
+});
+
+$(".test-library").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-test-id]");
+  if (!button) return;
+  const scenario = testQuestionLibrary[button.dataset.testId];
+  if (!scenario) return;
+  answerQuestion(scenario.question, { expected: scenario.expected, testId: button.dataset.testId });
+});
+
+$("#improvementLoop").addEventListener("click", (event) => {
+  if (event.target.closest("[data-add-failed-faq]")) addLatestFailedAnswerToFaq();
+});
 
 $("#agentList").addEventListener("click", (event) => {
   const row = event.target.closest("[data-agent]");

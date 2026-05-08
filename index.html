@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260508-no-auth-dynamic-actions" />
+    <link rel="stylesheet" href="./styles.css?v=20260508-product-audit" />
   </head>
   <body>
     <div class="app-shell">
@@ -70,8 +70,8 @@
                 <span>Voice ready</span>
               </div>
               <p class="eyebrow">Aira Studio</p>
-              <h2>Build & deploy <span>interactive</span> AI agents.</h2>
-              <p class="hero-subcopy">Agents that respond with sourced answers, transcript-style voice, and publish-ready experiences from your files and instructions.</p>
+              <h2>Build voice-ready AI agents from your documents.</h2>
+              <p class="hero-subcopy">A lightweight agent studio that turns business documents into tested, source-backed, voice-ready agents you can publish outside ChatGPT.</p>
               <div class="hero-actions">
                 <a class="primary-button" href="#builder">
                   <span data-icon="sparkles"></span>
@@ -141,14 +141,45 @@
                 <span class="status-pill">Free tier ready</span>
               </div>
               <div class="stack-grid">
-                <span>Firebase Auth</span>
+                <span>No-login prototype</span>
                 <span>Supabase Postgres</span>
                 <span>Supabase Storage</span>
                 <span>pgvector</span>
-                <span>Gemini API</span>
+                <span>Groq API</span>
+                <span>Gemini fallback</span>
                 <span>Web Speech API</span>
                 <span>Vercel</span>
                 <span>GitHub</span>
+              </div>
+            </section>
+          </div>
+          <div class="two-column product-positioning">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Aira Studio vs Custom GPTs</h3>
+                <span class="status-pill">Why Aira</span>
+              </div>
+              <div class="comparison-list">
+                <span>Embeddable website/app widget</span>
+                <span>Public share URL</span>
+                <span>Voice-first agent experience</span>
+                <span>Source-backed answers</span>
+                <span>Confidence scores</span>
+                <span>Agent analytics</span>
+                <span>No dependency on ChatGPT interface</span>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Best Demo Flow</h3>
+                <span class="status-pill">Support agent</span>
+              </div>
+              <div class="flow-list">
+                <span>Upload FAQ/product docs</span>
+                <span>Create support agent</span>
+                <span>Test answers</span>
+                <span>Check sources and confidence</span>
+                <span>Publish widget</span>
               </div>
             </section>
           </div>
@@ -316,6 +347,9 @@
               <div class="panel-heading">
                 <h3 id="chatAgentName">Agent Test</h3>
                 <div class="chat-actions">
+                  <button class="icon-button" id="speakToggleBtn" aria-label="Toggle spoken answers">
+                    <span data-icon="volume-2"></span>
+                  </button>
                   <button class="icon-button" id="retryBtn" aria-label="Retry last response">
                     <span data-icon="refresh-cw"></span>
                   </button>
@@ -325,6 +359,11 @@
                 </div>
               </div>
               <div id="chatMessages" class="chat-messages"></div>
+              <div class="test-library">
+                <button type="button" data-test-id="upload-readiness">Upload readiness</button>
+                <button type="button" data-test-id="source-backed">Source-backed answer</button>
+                <button type="button" data-test-id="fallback-behavior">Fallback behavior</button>
+              </div>
               <div id="suggestedQuestions" class="suggested-questions"></div>
               <form id="chatForm" class="chat-input-row">
                 <input id="chatInput" placeholder="Ask about the uploaded knowledge..." autocomplete="off" />
@@ -340,6 +379,9 @@
                 <span id="confidenceBadge" class="status-pill">0%</span>
               </div>
               <div id="sourceList" class="source-list"></div>
+              <div id="confidenceReasoning" class="confidence-reasoning"></div>
+              <div id="qaReview" class="qa-review"></div>
+              <div id="improvementLoop" class="improvement-loop"></div>
               <div class="feedback-panel">
                 <p>Response feedback</p>
                 <div>
@@ -417,6 +459,20 @@
               <div id="unknownQuestions" class="unknown-list"></div>
             </section>
           </div>
+          <div class="two-column">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Top Failed Intents</h3>
+              </div>
+              <div id="failedIntents" class="unknown-list"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Improvement Suggestions</h3>
+              </div>
+              <div id="analyticsSuggestions" class="unknown-list"></div>
+            </section>
+          </div>
         </section>
       </main>
     </div>
@@ -430,6 +486,6 @@
     </template>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script type="module" src="./app.js?v=20260508-no-auth-dynamic-actions"></script>
+    <script type="module" src="./app.js?v=20260508-product-audit"></script>
   </body>
 </html>
