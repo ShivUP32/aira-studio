@@ -861,7 +861,7 @@ pre {
 }
 
 .message {
-  max-width: min(720px, 92%);
+  max-width: min(780px, 92%);
   padding: 12px 14px;
   border-radius: 22px;
   line-height: 1.5;
@@ -878,6 +878,34 @@ pre {
   align-self: flex-start;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.055);
+}
+
+.answer-content {
+  display: grid;
+  gap: 12px;
+  font-size: 1rem;
+}
+
+.answer-content p,
+.answer-content ul,
+.answer-content h4 {
+  margin: 0;
+}
+
+.answer-content h4 {
+  color: var(--green);
+  font-size: 1.04rem;
+  margin-top: 4px;
+}
+
+.answer-content ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 1.1rem;
+}
+
+.answer-content li {
+  padding-left: 0.15rem;
 }
 
 .message-meta {

@@ -495,7 +495,7 @@ function renderChat() {
         (message) => `
           <div class="message user">${escapeHtml(message.question)}</div>
           <div class="message agent">
-            ${escapeHtml(message.answer || "")}${message.streaming ? '<span class="typing-cursor"></span>' : ""}
+            <div class="answer-content">${formatAssistantAnswer(message.answer || "")}${message.streaming ? '<span class="typing-cursor"></span>' : ""}</div>
             <span class="message-meta">${message.confidence}% confidence · ${message.sources.length} sources · ${escapeHtml(message.provider || "local-demo")}${message.model ? `/${escapeHtml(message.model)}` : ""}</span>
           </div>`
       )
@@ -782,12 +782,12 @@ async function answerQuestion(question) {
 }
 
 async function streamAssistantAnswer(record, answer, agent) {
-  speak(answer, agent);
-  const step = answer.length > 260 ? 4 : 2;
-  for (let index = 0; index < answer.length; index += step) {
-    record.answer = answer.slice(0, index + step);
-    renderChat();
-    await wait(18);
+  const chunks = buildTranscriptChunks(answer);
+  window.speechSynthesis?.cancel();
+  record.answer = "";
+  for (const chunk of chunks) {
+    await speakAndRevealChunk(record, chunk, agent);
+    await wait(chunk.pause);
   }
   record.answer = answer;
   record.streaming = false;
@@ -797,6 +797,112 @@ async function streamAssistantAnswer(record, answer, agent) {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function speakAndRevealChunk(record, chunk, agent) {
+  const speechPromise = speakChunk(chunk.speech, agent);
+  const tokens = chunk.text.match(/\S+\s*|\n+/g) || [chunk.text];
+  const duration = estimateSpeechDuration(chunk.speech);
+  const delay = Math.min(140, Math.max(36, duration / Math.max(1, tokens.length)));
+
+  for (const token of tokens) {
+    record.answer += token;
+    renderChat();
+    await wait(delay);
+  }
+
+  await speechPromise;
+}
+
+function estimateSpeechDuration(text) {
+  const words = String(text).trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(260, words * 310);
+}
+
+function formatAssistantAnswer(text) {
+  const normalized = normalizeAnswerText(text);
+  const lines = normalized.split("\n");
+  const html = [];
+  let listOpen = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (listOpen) {
+        html.push("</ul>");
+        listOpen = false;
+      }
+      continue;
+    }
+
+    const bullet = trimmed.match(/^[-*]\s+(.+)/);
+    if (bullet) {
+      if (!listOpen) {
+        html.push("<ul>");
+        listOpen = true;
+      }
+      html.push(`<li>${inlineMarkdown(bullet[1])}</li>`);
+      continue;
+    }
+
+    if (listOpen) {
+      html.push("</ul>");
+      listOpen = false;
+    }
+
+    const heading = trimmed.match(/^\*\*(.+?)\*\*:?\s*$/);
+    const hashHeading = trimmed.match(/^#{1,6}\s+(.+)/);
+    if (heading) {
+      html.push(`<h4>${escapeHtml(heading[1])}</h4>`);
+    } else if (hashHeading) {
+      html.push(`<h4>${inlineMarkdown(hashHeading[1])}</h4>`);
+    } else {
+      html.push(`<p>${inlineMarkdown(trimmed)}</p>`);
+    }
+  }
+
+  if (listOpen) html.push("</ul>");
+  return html.join("");
+}
+
+function normalizeAnswerText(text) {
+  return String(text)
+    .replace(/\s+\*\*([^*]+)\*\*/g, "\n\n**$1**\n")
+    .replace(/(?:^|\s)-\s+(?=[A-Z0-9])/g, "\n- ")
+    .replace(/\s+(To summarize:)/gi, "\n\n**Summary**\n")
+    .replace(/\s+(Examples?:)/gi, "\n\n**Examples**\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function inlineMarkdown(text) {
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+function buildTranscriptChunks(answer) {
+  const rawParts = String(answer).match(/[^,.;:!?]+[,.;:!?]?|\n+/g) || [String(answer)];
+  return rawParts
+    .map((part) => {
+      const speech = cleanSpeechText(part);
+      const punctuation = part.match(/[,.;:!?]\s*$/)?.[0]?.trim() || "";
+      return {
+        text: part,
+        speech,
+        pause: punctuation === "," ? 180 : punctuation ? 360 : 90
+      };
+    })
+    .filter((chunk) => chunk.text);
+}
+
+function cleanSpeechText(text) {
+  return String(text)
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/^[-*]\s+/gm, "")
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function requestLlmAnswer({ question, agent, retrieval }) {
@@ -877,10 +983,11 @@ function composeAnswer(question, agent, retrieval, confidence) {
 
   const sentences = retrieval.context
     .split(/(?<=[.!?])\s+/)
-    .filter((sentence) => sentence.length > 18)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 30 && !/recommended prompt pattern|greeting:|fallback:/i.test(sentence))
     .slice(0, 3);
-  const body = sentences.join(" ");
-  return `${body} ${confidence < 55 ? "This looks partially supported, so I would confirm the missing detail before acting." : ""}`.trim();
+  const body = sentences.length ? sentences.join(" ") : retrieval.context.slice(0, 260);
+  return `**Answer**\n${body}\n\n**Next step**\n${confidence < 55 ? "This looks partially supported, so add clearer knowledge or test another question." : "Ask a follow-up question or test this answer before publishing."}`;
 }
 
 function chunkText(text) {
@@ -896,13 +1003,17 @@ function tokenize(text) {
   return [...new Set(text.toLowerCase().match(/[a-z0-9]+/g) || [])].filter((word) => word.length > 2);
 }
 
-function speak(text, agent) {
-  if (!("speechSynthesis" in window)) return;
-  const utterance = new SpeechSynthesisUtterance(text.slice(0, 260));
-  utterance.rate = agent.voice === "Formal assistant" ? 0.92 : 1;
-  utterance.pitch = agent.voice === "Bright helper" ? 1.14 : 1;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+function speakChunk(text, agent) {
+  if (!("speechSynthesis" in window) || !text) return Promise.resolve();
+  return new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = agent.voice === "Formal assistant" ? 0.82 : 0.88;
+    utterance.pitch = agent.voice === "Bright helper" ? 1.08 : 0.98;
+    utterance.volume = 0.95;
+    utterance.onend = resolve;
+    utterance.onerror = resolve;
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
 function startVoice() {

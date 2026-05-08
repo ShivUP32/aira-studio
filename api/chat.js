@@ -66,7 +66,18 @@ ${sourceList || "No sources available."}
 User question:
 ${question}
 
-Answer as the configured agent. If the context is insufficient, say what is missing and ask one clear follow-up question.`;
+Answer as the configured agent.
+
+Formatting requirements:
+- Return clean markdown that the UI can structure.
+- Use short sections with bold labels only when helpful, for example **Active voice** or **Summary**.
+- Use bullets for examples or comparisons.
+- Avoid one long paragraph.
+- For "difference between", "compare", or teaching questions, use this structure: one short intro, two labeled sections, bullets for examples, and a short summary.
+- Keep each paragraph under three sentences.
+- Do not include annotation symbols as spoken content; markdown is only for visual structure.
+- Do not write raw markdown markers inside the sentence body. Put bold labels on their own line when possible.
+- If the context is insufficient, say what is missing and ask one clear follow-up question.`;
 }
 
 async function callGroq(prompt) {
