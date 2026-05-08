@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260508-support-prompt" />
+    <link rel="stylesheet" href="./styles.css?v=20260508-template-wizard" />
   </head>
   <body>
     <div class="app-shell">
@@ -167,93 +167,139 @@
         <section id="builder" class="route">
           <div class="builder-layout">
             <form id="agentForm" class="panel form-panel">
-              <div class="step-header">
-                <span class="step-number">1</span>
-                <div>
-                  <h3>Agent Profile</h3>
-                  <p>Name, role, goal, tone, and guardrails.</p>
-                </div>
-              </div>
-              <div class="form-grid">
-                <label>
-                  Agent name
-                  <input required name="name" placeholder="Aira Support Assistant" />
-                </label>
-                <label>
-                  Agent type
-                  <select name="type">
-                    <option>Support Agent</option>
-                    <option>Sales Agent</option>
-                    <option>Learning Companion</option>
-                    <option>FAQ Assistant</option>
-                    <option>Personal Assistant</option>
-                  </select>
-                </label>
-                <label class="wide">
-                  Description
-                  <textarea name="description" rows="3" placeholder="Helps customers find accurate answers from product PDFs."></textarea>
-                </label>
-                <label>
-                  Persona tone
-                  <select name="tone">
-                    <option>Friendly and concise</option>
-                    <option>Professional and calm</option>
-                    <option>Warm teacher</option>
-                    <option>Direct sales advisor</option>
-                    <option>Technical expert</option>
-                  </select>
-                </label>
-                <label>
-                  Voice persona
-                  <select name="voice">
-                    <option>Browser default</option>
-                    <option>Calm guide</option>
-                    <option>Bright helper</option>
-                    <option>Formal assistant</option>
-                  </select>
-                </label>
-                <label class="wide">
-                  Goal
-                  <textarea name="goal" rows="3" placeholder="Resolve user questions using uploaded knowledge and ask for clarification when context is missing."></textarea>
-                </label>
-                <label>
-                  Greeting
-                  <input name="greeting" placeholder="Hi, I’m Aira. How can I help?" />
-                </label>
-                <label>
-                  Fallback
-                  <input name="fallback" placeholder="I don’t have enough context yet. Could you add detail?" />
-                </label>
+              <div class="wizard-progress" aria-label="Agent builder progress">
+                <button type="button" class="wizard-step active" data-builder-step-target="1">
+                  <span>1</span>
+                  Template & Profile
+                </button>
+                <button type="button" class="wizard-step" data-builder-step-target="2">
+                  <span>2</span>
+                  Knowledge
+                </button>
+                <button type="button" class="wizard-step" data-builder-step-target="3">
+                  <span>3</span>
+                  Review & Test
+                </button>
               </div>
 
-              <div class="step-header">
-                <span class="step-number">2</span>
-                <div>
-                  <h3>Knowledge</h3>
-                  <p>PDF, TXT, or manual FAQ input.</p>
+              <section class="builder-step-pane active" data-builder-step="1">
+                <div class="step-header">
+                  <span class="step-number">1</span>
+                  <div>
+                    <h3>Choose a Template</h3>
+                    <p>Start simple, then customize the agent persona.</p>
+                  </div>
                 </div>
-              </div>
-              <div class="knowledge-zone" id="dropZone">
-                <input id="knowledgeFiles" type="file" accept=".pdf,.txt,text/plain,application/pdf" multiple />
-                <span data-icon="upload-cloud"></span>
-                <strong>Drop files or choose PDFs/TXT</strong>
-                <small>PDF extraction uses the browser when available; TXT works offline.</small>
-              </div>
-              <div id="fileList" class="file-list"></div>
+                <div id="templateGrid" class="template-grid"></div>
+                <div class="step-header compact">
+                  <span class="step-number">1.2</span>
+                  <div>
+                    <h3>Agent Profile</h3>
+                    <p>Name, role, goal, tone, and guardrails.</p>
+                  </div>
+                </div>
+                <div class="form-grid">
+                  <label>
+                    Agent name
+                    <input required name="name" placeholder="Aira Support Assistant" />
+                  </label>
+                  <label>
+                    Agent type
+                    <select name="type">
+                      <option>Support Agent</option>
+                      <option>Sales Agent</option>
+                      <option>Learning Companion</option>
+                      <option>FAQ Assistant</option>
+                      <option>Personal Assistant</option>
+                    </select>
+                  </label>
+                  <label class="wide">
+                    Description
+                    <textarea name="description" rows="3" placeholder="Helps customers find accurate answers from product PDFs."></textarea>
+                  </label>
+                  <label>
+                    Persona tone
+                    <select name="tone">
+                      <option>Friendly and concise</option>
+                      <option>Professional and calm</option>
+                      <option>Warm teacher</option>
+                      <option>Direct sales advisor</option>
+                      <option>Technical expert</option>
+                    </select>
+                  </label>
+                  <label>
+                    Voice persona
+                    <select name="voice">
+                      <option>Browser default</option>
+                      <option>Calm guide</option>
+                      <option>Bright helper</option>
+                      <option>Formal assistant</option>
+                    </select>
+                  </label>
+                  <label class="wide">
+                    Goal
+                    <textarea name="goal" rows="3" placeholder="Resolve user questions using uploaded knowledge and ask for clarification when context is missing."></textarea>
+                  </label>
+                  <label>
+                    Greeting
+                    <input name="greeting" placeholder="Hi, I’m Aira. How can I help?" />
+                  </label>
+                  <label>
+                    Fallback
+                    <input name="fallback" placeholder="I don’t have enough context yet. Could you add detail?" />
+                  </label>
+                </div>
+              </section>
 
-              <label class="manual-faq">
-                Manual FAQ
-                <textarea name="manualFaq" rows="6" placeholder="Q: What is the refund policy?&#10;A: Refunds are available within 14 days..."></textarea>
-              </label>
+              <section class="builder-step-pane" data-builder-step="2">
+                <div class="step-header">
+                  <span class="step-number">2</span>
+                  <div>
+                    <h3>Knowledge</h3>
+                    <p>PDF, TXT, or manual FAQ input with visible processing states.</p>
+                  </div>
+                </div>
+                <div class="knowledge-zone" id="dropZone">
+                  <input id="knowledgeFiles" type="file" accept=".pdf,.txt,text/plain,application/pdf" multiple />
+                  <span data-icon="upload-cloud"></span>
+                  <strong>Drop files or choose PDFs/TXT</strong>
+                  <small>Uploading → Extracting → Chunking → Stored → Ready for testing.</small>
+                </div>
+                <div id="fileList" class="file-list"></div>
+
+                <label class="manual-faq">
+                  Manual FAQ
+                  <textarea name="manualFaq" rows="6" placeholder="Q: What is the refund policy?&#10;A: Refunds are available within 14 days..."></textarea>
+                </label>
+              </section>
+
+              <section class="builder-step-pane" data-builder-step="3">
+                <div class="step-header">
+                  <span class="step-number">3</span>
+                  <div>
+                    <h3>Review & Test</h3>
+                    <p>Check readiness, review the prompt, then save and test.</p>
+                  </div>
+                </div>
+                <div id="builderReadiness" class="readiness-list"></div>
+              </section>
 
               <div class="form-actions">
                 <button type="button" class="secondary-button" id="resetDemoBtn">
                   <span data-icon="rotate-ccw"></span>
                   Reset Demo
                 </button>
-                <button type="submit" class="primary-button">
+                <button type="button" class="secondary-button" id="prevStepBtn">
+                  <span data-icon="arrow-left"></span>
+                  Back
+                </button>
+                <button type="button" class="primary-button" id="nextStepBtn">
+                  Continue
+                  <span data-icon="arrow-right"></span>
+                </button>
+                <button type="submit" class="primary-button hidden" id="saveAgentBtn">
                   <span data-icon="save"></span>
-                  Save Agent
+                  Save & Test Agent
                 </button>
               </div>
             </form>
@@ -264,6 +310,10 @@
                 <button class="icon-button" id="copyPromptBtn" aria-label="Copy prompt">
                   <span data-icon="copy"></span>
                 </button>
+              </div>
+              <div class="prompt-tabs">
+                <span class="status-pill">Auto-generated</span>
+                <span class="status-pill">Universal guidelines</span>
               </div>
               <pre id="promptPreview"></pre>
             </aside>
@@ -323,6 +373,7 @@
                 <span id="publishState" class="status-pill">Draft</span>
               </div>
               <div class="publish-controls">
+                <div id="publishReadiness" class="readiness-list"></div>
                 <label class="toggle-row">
                   <input type="checkbox" id="publishToggle" />
                   <span>Public share URL</span>
@@ -389,6 +440,6 @@
     </template>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script type="module" src="./app.js?v=20260508-groq-gemini"></script>
+    <script type="module" src="./app.js?v=20260508-template-wizard"></script>
   </body>
 </html>

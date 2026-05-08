@@ -1,5 +1,86 @@
 const STORAGE_KEY = "aira-studio-state";
 const AIRA_SUPPORT_KB_VERSION = 2;
+let builderStep = 1;
+
+const agentTemplates = [
+  {
+    id: "support",
+    name: "Support Agent",
+    icon: "headphones",
+    description: "Answer customer questions from product docs and FAQs.",
+    type: "Support Agent",
+    tone: "Friendly and concise",
+    goal: "Resolve customer questions using uploaded support knowledge. Ask for clarification when details are missing and avoid unsupported claims.",
+    greeting: "Hi, I’m your support assistant. What can I help you solve today?",
+    fallback: "I don’t have enough support context yet. Could you share more detail or add the right help document?"
+  },
+  {
+    id: "sales",
+    name: "Sales Assistant",
+    icon: "badge-dollar-sign",
+    description: "Qualify leads and answer product/pricing questions.",
+    type: "Sales Agent",
+    tone: "Direct sales advisor",
+    goal: "Help prospects understand the product, qualify their needs, and recommend next steps using uploaded sales knowledge.",
+    greeting: "Hi, I can help you find the right solution. What are you trying to achieve?",
+    fallback: "I need more product or pricing context before I can answer that confidently."
+  },
+  {
+    id: "teacher",
+    name: "English Teacher",
+    icon: "graduation-cap",
+    description: "Help learners practice English with patient corrections.",
+    type: "Learning Companion",
+    tone: "Warm teacher",
+    goal: "Teach concepts step by step, correct mistakes gently, and adapt explanations to the learner’s level.",
+    greeting: "Hi, I’m your English practice partner. What would you like to learn today?",
+    fallback: "I need a little more learning context. Share the topic, level, or material you want to practice."
+  },
+  {
+    id: "study",
+    name: "Study Buddy",
+    icon: "book-open-check",
+    description: "Turn notes into summaries, quizzes, and explanations.",
+    type: "Learning Companion",
+    tone: "Warm teacher",
+    goal: "Help students understand uploaded notes, summarize concepts, generate practice questions, and explain difficult ideas clearly.",
+    greeting: "Hi, upload your notes or ask me what you want to study.",
+    fallback: "I don’t see enough study material for that yet. Add notes or ask about the uploaded content."
+  },
+  {
+    id: "faq",
+    name: "FAQ Bot",
+    icon: "circle-help",
+    description: "Answer narrowly from a fixed FAQ or policy document.",
+    type: "FAQ Assistant",
+    tone: "Professional and calm",
+    goal: "Answer only from the uploaded FAQ or policy knowledge. Keep responses short and cite the relevant source.",
+    greeting: "Hi, ask me a question from the FAQ.",
+    fallback: "I can’t find that in the FAQ yet. Please add the answer or upload the right policy document."
+  },
+  {
+    id: "friend",
+    name: "AI Friend",
+    icon: "smile",
+    description: "A casual persona bot for conversation, ideas, and fun.",
+    type: "Personal Assistant",
+    tone: "Friendly and concise",
+    goal: "Be a friendly conversational companion while staying safe, respectful, and clear about uncertainty.",
+    greeting: "Hey, I’m here. What do you want to talk about?",
+    fallback: "I’m not sure yet. Tell me a bit more about what you want from this conversation."
+  },
+  {
+    id: "custom",
+    name: "Custom Agent",
+    icon: "sparkles",
+    description: "Start blank and define your own agent from scratch.",
+    type: "Personal Assistant",
+    tone: "Friendly and concise",
+    goal: "Help users complete the purpose defined in the agent profile while staying grounded in uploaded knowledge.",
+    greeting: "Hi, how can I help?",
+    fallback: "I need a little more context before I can answer."
+  }
+];
 
 const universalAgentGuidelines = `Universal response guidelines:
 - Be helpful, clear, and direct. Answer the user's actual question first, then add useful context only when it helps.
@@ -99,6 +180,7 @@ const defaultAgent = {
   greeting: "Hi, I’m Aira. Tell me what kind of AI agent you want to build, and I’ll help you configure it.",
   fallback: "I need a little more detail. Tell me the agent’s purpose, audience, and knowledge source.",
   supportKbVersion: AIRA_SUPPORT_KB_VERSION,
+  templateId: "support",
   published: false,
   accessControl: false,
   embedEnabled: true,
@@ -218,6 +300,7 @@ function render() {
   renderAuth();
   renderAgentSelect();
   renderDashboard();
+  renderBuilder();
   renderPrompt();
   renderChat();
   renderPublish();
@@ -280,6 +363,79 @@ function populateForm() {
   });
   form.elements.manualFaq.value = "";
   renderFileList();
+  renderBuilder();
+}
+
+function renderBuilder() {
+  renderTemplateGrid();
+  renderBuilderStep();
+  renderReadiness("#builderReadiness", formDraftAgent());
+}
+
+function renderTemplateGrid() {
+  const grid = $("#templateGrid");
+  if (!grid) return;
+  const agent = formDraftAgent();
+  grid.innerHTML = agentTemplates
+    .map(
+      (template) => `
+        <button type="button" class="template-card ${agent.templateId === template.id ? "selected" : ""}" data-template-id="${template.id}">
+          <span data-icon="${template.icon}"></span>
+          <strong>${escapeHtml(template.name)}</strong>
+          <small>${escapeHtml(template.description)}</small>
+        </button>`
+    )
+    .join("");
+}
+
+function renderBuilderStep() {
+  $$(".builder-step-pane").forEach((pane) => {
+    pane.classList.toggle("active", Number(pane.dataset.builderStep) === builderStep);
+  });
+  $$(".wizard-step").forEach((step) => {
+    step.classList.toggle("active", Number(step.dataset.builderStepTarget) === builderStep);
+  });
+  $("#prevStepBtn").classList.toggle("hidden", builderStep === 1);
+  $("#nextStepBtn").classList.toggle("hidden", builderStep === 3);
+  $("#saveAgentBtn").classList.toggle("hidden", builderStep !== 3);
+}
+
+function setBuilderStep(step) {
+  builderStep = Math.min(3, Math.max(1, step));
+  renderBuilderStep();
+  renderPrompt();
+  renderIcons();
+}
+
+function applyTemplate(templateId) {
+  const template = agentTemplates.find((item) => item.id === templateId);
+  if (!template) return;
+  const form = $("#agentForm");
+  const agent = activeAgent();
+  agent.templateId = template.id;
+  form.elements.type.value = template.type;
+  form.elements.tone.value = template.tone;
+  form.elements.description.value = template.description;
+  form.elements.goal.value = template.goal;
+  form.elements.greeting.value = template.greeting;
+  form.elements.fallback.value = template.fallback;
+  const existingTemplateNames = agentTemplates.map((item) => item.name).concat("Aira Support Assistant", "Untitled Agent");
+  if (!form.elements.name.value || existingTemplateNames.includes(form.elements.name.value)) {
+    form.elements.name.value = template.name;
+  }
+  saveAgentDraftFromForm();
+  renderBuilder();
+  renderPrompt();
+  renderIcons();
+}
+
+function saveAgentDraftFromForm() {
+  const form = $("#agentForm");
+  const agent = activeAgent();
+  ["name", "type", "description", "tone", "voice", "goal", "greeting", "fallback"].forEach((key) => {
+    agent[key] = form.elements[key].value.trim();
+  });
+  saveState();
 }
 
 function renderFileList() {
@@ -291,8 +447,9 @@ function renderFileList() {
           <div class="file-item">
             <span>
               <strong>${escapeHtml(item.title)}</strong>
-              <small>${item.type.toUpperCase()} · ${item.text.length.toLocaleString()} chars</small>
+              <small>${item.type.toUpperCase()} · ${formatBytes(item.size || item.text.length)} · ${item.chunkCount || chunkText(item.text).length} chunks</small>
             </span>
+            <span class="status-pill">${escapeHtml(item.status || "Ready")}</span>
             <button class="icon-button" data-remove-source="${item.id}" aria-label="Remove source">
               <span data-icon="trash-2"></span>
             </button>
@@ -349,7 +506,7 @@ function renderChat() {
     .join("");
 
   const latest = messages.at(-1);
-  $("#confidenceBadge").textContent = `${latest?.confidence || 0}%`;
+  $("#confidenceBadge").textContent = latest ? `${latest.confidence}%` : "Ask first";
   $("#thumbsUpBtn").disabled = !latest;
   $("#thumbsDownBtn").disabled = !latest;
   $("#thumbsUpBtn").classList.toggle("selected", latest?.feedback === "up");
@@ -359,7 +516,10 @@ function renderChat() {
       .map(
         (source) => `
         <div class="source-item">
-          <strong>${escapeHtml(source.title)}</strong>
+          <div class="source-title-row">
+            <strong>${escapeHtml(source.title)}</strong>
+            <span class="status-pill">${source.score ? `${Math.round(source.score)} match` : "used"}</span>
+          </div>
           <small>${escapeHtml(source.preview)}</small>
         </div>`
       )
@@ -367,7 +527,7 @@ function renderChat() {
 }
 
 function buildSuggestions(agent) {
-  const isAiraSupport = agent.name === "Aira Support Assistant";
+  const isAiraSupport = agent.name === "Aira Support Assistant" || agent.templateId === "support";
   const base = isAiraSupport
     ? [
         "Help me create a support agent.",
@@ -387,16 +547,78 @@ function buildSuggestions(agent) {
 
 function renderPublish() {
   const agent = activeAgent();
+  const readiness = getReadiness(agent);
   $("#publishToggle").checked = agent.published;
+  $("#publishToggle").disabled = !readiness.ready;
   $("#embedToggle").checked = agent.embedEnabled;
   $("#accessToggle").checked = agent.accessControl;
-  $("#publishState").textContent = agent.published ? "Live" : "Draft";
+  $("#publishState").textContent = agent.published ? "Live" : readiness.ready ? "Ready" : "Needs setup";
+  renderReadiness("#publishReadiness", agent);
   const slug = slugify(agent.name);
   const url = `${window.location.origin}/agents/${slug}`;
   $("#shareUrl").value = url;
   $("#embedCode").textContent = `<script async src="${url}/widget.js" data-agent="${agent.id}"></script>`;
   $("#widgetAgentName").textContent = agent.name;
   $("#widgetGreeting").textContent = agent.greeting;
+}
+
+function getReadiness(agent) {
+  const conversations = state.conversations.filter((item) => item.agentId === agent.id);
+  const tested = conversations.length >= 3;
+  const goodAnswer = conversations.some((item) => item.confidence >= 60);
+  const checks = [
+    {
+      id: "profile",
+      label: "Profile complete",
+      detail: "Name, type, goal, greeting, and fallback are set.",
+      done: Boolean(agent.name && agent.type && agent.goal && agent.greeting && agent.fallback)
+    },
+    {
+      id: "knowledge",
+      label: "Knowledge ready",
+      detail: "At least one PDF, TXT, or FAQ source is available.",
+      done: (agent.knowledge || []).length > 0
+    },
+    {
+      id: "testing",
+      label: "Three test questions",
+      detail: `${conversations.length}/3 test questions completed.`,
+      done: tested
+    },
+    {
+      id: "confidence",
+      label: "Trusted answer found",
+      detail: "At least one answer reached 60%+ confidence.",
+      done: goodAnswer
+    }
+  ];
+  return {
+    checks,
+    ready: checks.every((check) => check.done)
+  };
+}
+
+function renderReadiness(selector, agent) {
+  const container = $(selector);
+  if (!container) return;
+  const readiness = getReadiness(agent);
+  container.innerHTML = `
+    <div class="readiness-header">
+      <strong>${readiness.ready ? "Agent ready" : "Agent readiness"}</strong>
+      <span class="status-pill">${readiness.checks.filter((check) => check.done).length}/${readiness.checks.length}</span>
+    </div>
+    ${readiness.checks
+      .map(
+        (check) => `
+          <div class="readiness-item ${check.done ? "done" : ""}">
+            <span data-icon="${check.done ? "check" : "circle"}"></span>
+            <div>
+              <strong>${escapeHtml(check.label)}</strong>
+              <small>${escapeHtml(check.detail)}</small>
+            </div>
+          </div>`
+      )
+      .join("")}`;
 }
 
 function renderAnalytics() {
@@ -445,7 +667,11 @@ async function handleFiles(files) {
       id: crypto.randomUUID(),
       title: file.name,
       type: file.name.toLowerCase().endsWith(".pdf") ? "pdf" : "txt",
-      text
+      text,
+      size: file.size,
+      status: "Ready for testing",
+      chunkCount: chunkText(text).length,
+      updatedAt: new Date().toISOString()
     });
   }
   saveState();
@@ -486,24 +712,30 @@ function saveAgentFromForm(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const agent = activeAgent();
-  ["name", "type", "description", "tone", "voice", "goal", "greeting", "fallback"].forEach((key) => {
-    agent[key] = form.elements[key].value.trim();
-  });
+  saveAgentDraftFromForm();
 
   const manualFaq = form.elements.manualFaq.value.trim();
-  if (manualFaq) {
-    agent.knowledge.push({
-      id: crypto.randomUUID(),
-      title: "Manual FAQ",
-      type: "faq",
-      text: manualFaq
-    });
-    form.elements.manualFaq.value = "";
-  }
+  addManualFaqIfPresent(form, agent, manualFaq);
 
   saveState();
   render();
   setRoute("test");
+}
+
+function addManualFaqIfPresent(form, agent, manualFaq = form.elements.manualFaq.value.trim()) {
+  if (!manualFaq) return false;
+  agent.knowledge.push({
+    id: crypto.randomUUID(),
+    title: "Manual FAQ",
+    type: "faq",
+    text: manualFaq,
+    size: manualFaq.length,
+    status: "Ready for testing",
+    chunkCount: chunkText(manualFaq).length,
+    updatedAt: new Date().toISOString()
+  });
+  form.elements.manualFaq.value = "";
+  return true;
 }
 
 function createAgent() {
@@ -513,6 +745,7 @@ function createAgent() {
     name: "Untitled Agent",
     description: "",
     knowledge: [],
+    templateId: "custom",
     createdAt: new Date().toISOString()
   };
   state.agents.push(agent);
@@ -582,7 +815,8 @@ function retrieve(query, knowledge) {
       score: 78,
       sources: chunks.slice(0, 3).map((item) => ({
         title: item.title,
-        preview: item.text.slice(0, 220)
+        preview: item.text.slice(0, 220),
+        score: 78
       })),
       context: chunks
         .slice(0, 2)
@@ -609,7 +843,8 @@ function retrieve(query, knowledge) {
     score: ranked[0]?.score || 0,
     sources: ranked.map((item) => ({
       title: item.title,
-      preview: item.text.slice(0, 220)
+      preview: item.text.slice(0, 220),
+      score: item.score
     })),
     context: ranked.map((item) => item.text).join("\n")
   };
@@ -689,6 +924,13 @@ function slugify(value) {
     .replace(/(^-|-$)/g, "");
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes)) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function copyText(value) {
   navigator.clipboard?.writeText(value);
 }
@@ -733,6 +975,24 @@ $("#activeAgentSelect").addEventListener("change", (event) => {
 
 $("#agentForm").addEventListener("input", renderPrompt);
 $("#agentForm").addEventListener("submit", saveAgentFromForm);
+$("#templateGrid").addEventListener("click", (event) => {
+  const card = event.target.closest("[data-template-id]");
+  if (card) applyTemplate(card.dataset.templateId);
+});
+$$("[data-builder-step-target]").forEach((button) => {
+  button.addEventListener("click", () => setBuilderStep(Number(button.dataset.builderStepTarget)));
+});
+$("#prevStepBtn").addEventListener("click", () => setBuilderStep(builderStep - 1));
+$("#nextStepBtn").addEventListener("click", () => {
+  saveAgentDraftFromForm();
+  if (builderStep === 2) {
+    addManualFaqIfPresent($("#agentForm"), activeAgent());
+    saveState();
+    renderFileList();
+  }
+  setBuilderStep(builderStep + 1);
+  renderReadiness("#builderReadiness", activeAgent());
+});
 $("#knowledgeFiles").addEventListener("change", (event) => handleFiles(event.target.files));
 $("#dropZone").addEventListener("dragover", (event) => event.preventDefault());
 $("#dropZone").addEventListener("drop", (event) => {
@@ -747,6 +1007,7 @@ $("#fileList").addEventListener("click", (event) => {
   agent.knowledge = agent.knowledge.filter((item) => item.id !== button.dataset.removeSource);
   saveState();
   renderFileList();
+  renderReadiness("#builderReadiness", agent);
   renderIcons();
 });
 
@@ -780,7 +1041,16 @@ $("#micBtn").addEventListener("click", startVoice);
 ["publishToggle", "embedToggle", "accessToggle"].forEach((id) => {
   $(`#${id}`).addEventListener("change", (event) => {
     const agent = activeAgent();
-    if (id === "publishToggle") agent.published = event.target.checked;
+    if (id === "publishToggle") {
+      const readiness = getReadiness(agent);
+      if (!readiness.ready) {
+        agent.published = false;
+        event.target.checked = false;
+        renderPublish();
+        return;
+      }
+      agent.published = event.target.checked;
+    }
     if (id === "embedToggle") agent.embedEnabled = event.target.checked;
     if (id === "accessToggle") agent.accessControl = event.target.checked;
     saveState();

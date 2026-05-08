@@ -41,11 +41,13 @@ Groq is used first. If Groq fails or is not configured, the API tries Gemini. If
 ## App Flow
 
 1. Continue with Google.
-2. Create an agent profile with type, tone, goal, greeting, and fallback.
-3. Upload PDF/TXT or add manual FAQ knowledge.
-4. Test the agent in chat or with microphone input.
-5. Publish a public URL and embeddable widget snippet.
-6. Review analytics for conversations, confidence, unknown questions, and voice usage.
+2. Choose a starter template or custom agent.
+3. Complete the 3-step builder: Profile, Knowledge, Review & Test.
+4. Upload PDF/TXT or add manual FAQ knowledge.
+5. Test the agent in chat or with microphone input.
+6. Use the readiness checklist before publishing.
+7. Publish a public URL and embeddable widget snippet.
+8. Review analytics for conversations, confidence, unknown questions, and voice usage.
 
 ## Supabase Setup
 
