@@ -501,12 +501,12 @@ function renderChat() {
       )
       .join("") || `<div class="message agent">${escapeHtml(agent.greeting)}</div>`;
 
-  const suggestions = buildSuggestions(agent);
+  const latest = messages.at(-1);
+  const suggestions = buildSuggestions(agent, latest);
   $("#suggestedQuestions").innerHTML = suggestions
     .map((question) => `<button type="button" data-suggestion="${escapeHtml(question)}">${escapeHtml(question)}</button>`)
     .join("");
 
-  const latest = messages.at(-1);
   $("#confidenceBadge").textContent = latest ? `${latest.confidence}%` : "Ask first";
   $("#thumbsUpBtn").disabled = !latest;
   $("#thumbsDownBtn").disabled = !latest;
@@ -527,7 +527,10 @@ function renderChat() {
       .join("") || "<p>No retrieval yet.</p>";
 }
 
-function buildSuggestions(agent) {
+function buildSuggestions(agent, latest) {
+  if (latest?.suggestions?.length) return latest.suggestions;
+  if (latest?.answer) return buildFollowUpSuggestions(latest, agent);
+
   const isAiraSupport = agent.name === "Aira Support Assistant" || agent.templateId === "support";
   const base = isAiraSupport
     ? [
@@ -544,6 +547,48 @@ function buildSuggestions(agent) {
   const qMatch = firstSource.match(/Q:\s*(.+)/i);
   if (qMatch) base[0] = qMatch[1].trim();
   return base;
+}
+
+function buildFollowUpSuggestions(message, agent) {
+  const text = `${message.question} ${message.answer}`.toLowerCase();
+
+  if (/active|passive|grammar|sentence|pronoun|verb|english/.test(text) || agent.templateId === "teacher") {
+    return [
+      "Give me 5 practice questions.",
+      "Explain it in simpler words.",
+      "Check my own example sentence."
+    ];
+  }
+
+  if (/publish|share|deploy|embed/.test(text)) {
+    return [
+      "Show my publish checklist.",
+      "How do I share this agent?",
+      "What should I test first?"
+    ];
+  }
+
+  if (/upload|knowledge|pdf|document|source/.test(text)) {
+    return [
+      "What files should I upload?",
+      "How do I improve source quality?",
+      "Add a manual FAQ example."
+    ];
+  }
+
+  if (/sales|lead|pricing|prospect/.test(text) || agent.templateId === "sales") {
+    return [
+      "Create qualifying questions.",
+      "Draft a sales greeting.",
+      "What sales docs should I upload?"
+    ];
+  }
+
+  return [
+    "Give me a shorter summary.",
+    "Show the next step.",
+    "Create a follow-up example."
+  ];
 }
 
 function renderPublish() {
@@ -790,6 +835,7 @@ async function streamAssistantAnswer(record, answer, agent) {
     await wait(chunk.pause);
   }
   record.answer = answer;
+  record.suggestions = buildFollowUpSuggestions(record, agent);
   record.streaming = false;
   saveState();
   render();
@@ -880,18 +926,32 @@ function inlineMarkdown(text) {
 }
 
 function buildTranscriptChunks(answer) {
-  const rawParts = String(answer).match(/[^,.;:!?]+[,.;:!?]?|\n+/g) || [String(answer)];
-  return rawParts
-    .map((part) => {
+  const chunks = [];
+  const lines = normalizeAnswerText(answer).split(/(\n+)/).filter(Boolean);
+
+  for (const line of lines) {
+    if (/^\n+$/.test(line)) {
+      chunks.push({ text: line, speech: "", pause: 420 });
+      continue;
+    }
+
+    const isHeading = /^\s*(#{1,6}\s+|\*\*.+?\*\*:?\s*$)/.test(line);
+    const parts = line.match(/[^,.;:!?]+[,.;:!?]?|\s+/g) || [line];
+
+    for (const part of parts) {
       const speech = cleanSpeechText(part);
       const punctuation = part.match(/[,.;:!?]\s*$/)?.[0]?.trim() || "";
-      return {
+      chunks.push({
         text: part,
         speech,
-        pause: punctuation === "," ? 180 : punctuation ? 360 : 90
-      };
-    })
-    .filter((chunk) => chunk.text);
+        pause: isHeading ? 620 : punctuation === "," ? 220 : punctuation ? 420 : 90
+      });
+    }
+
+    chunks.push({ text: "\n", speech: "", pause: isHeading ? 520 : 160 });
+  }
+
+  return chunks.filter((chunk) => chunk.text);
 }
 
 function cleanSpeechText(text) {
@@ -901,6 +961,10 @@ function cleanSpeechText(text) {
     .replace(/#{1,6}\s*/g, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
+    .replace(/[,:;!?]+/g, "")
+    .replace(/\.(?=\s|$)/g, "")
+    .replace(/[()"]/g, "")
+    .replace(/\s+-\s+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

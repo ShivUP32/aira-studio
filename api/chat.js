@@ -77,6 +77,7 @@ Formatting requirements:
 - Keep each paragraph under three sentences.
 - Do not include annotation symbols as spoken content; markdown is only for visual structure.
 - Do not write raw markdown markers inside the sentence body. Put bold labels on their own line when possible.
+- End with one natural next-step question the user could answer, not a generic closing.
 - If the context is insufficient, say what is missing and ask one clear follow-up question.`;
 }
 
