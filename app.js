@@ -495,7 +495,7 @@ function renderChat() {
         (message) => `
           <div class="message user">${escapeHtml(message.question)}</div>
           <div class="message agent">
-            ${escapeHtml(message.answer)}
+            ${escapeHtml(message.answer || "")}${message.streaming ? '<span class="typing-cursor"></span>' : ""}
             <span class="message-meta">${message.confidence}% confidence · ${message.sources.length} sources · ${escapeHtml(message.provider || "local-demo")}${message.model ? `/${escapeHtml(message.model)}` : ""}</span>
           </div>`
       )
@@ -761,16 +761,16 @@ async function answerQuestion(question) {
   const retrieval = retrieve(question, agent.knowledge);
   const confidence = Math.min(98, Math.max(18, Math.round(retrieval.score)));
   const llmResult = await requestLlmAnswer({ question, agent, retrieval });
-  const answer = llmResult.answer || composeAnswer(question, agent, retrieval, confidence);
   const record = {
     id: crypto.randomUUID(),
     agentId: agent.id,
     question,
-    answer,
+    answer: "",
     confidence,
     sources: retrieval.sources,
     provider: llmResult.provider || "local-demo",
     model: llmResult.model || "browser-retrieval",
+    streaming: true,
     responseTime: (performance.now() - started) / 1000 + 0.4,
     createdAt: new Date().toISOString()
   };
@@ -778,7 +778,25 @@ async function answerQuestion(question) {
   lastQuestion = question;
   saveState();
   render();
+  await streamAssistantAnswer(record, llmResult.answer || composeAnswer(question, agent, retrieval, confidence), agent);
+}
+
+async function streamAssistantAnswer(record, answer, agent) {
   speak(answer, agent);
+  const step = answer.length > 260 ? 4 : 2;
+  for (let index = 0; index < answer.length; index += step) {
+    record.answer = answer.slice(0, index + step);
+    renderChat();
+    await wait(18);
+  }
+  record.answer = answer;
+  record.streaming = false;
+  saveState();
+  render();
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function requestLlmAnswer({ question, agent, retrieval }) {
