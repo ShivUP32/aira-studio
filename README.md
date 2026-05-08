@@ -1,6 +1,6 @@
 # Aira Studio
 
-Aira Studio is a no-code AI agent builder MVP based on the attached PRD. It lets a user configure an agent persona, upload PDF/TXT/manual FAQ knowledge, test a local RAG-style chat flow, use browser voice input/output, publish a share preview, and inspect analytics.
+Aira Studio is a no-code AI agent builder. It lets a user configure an agent persona, upload PDF/TXT/manual FAQ knowledge, test a local RAG-style chat flow, use browser voice input/output, publish a share preview, and inspect analytics.
 
 ## Run Locally
 
