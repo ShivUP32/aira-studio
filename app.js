@@ -243,6 +243,10 @@ function renderChat() {
 
   const latest = messages.at(-1);
   $("#confidenceBadge").textContent = `${latest?.confidence || 0}%`;
+  $("#thumbsUpBtn").disabled = !latest;
+  $("#thumbsDownBtn").disabled = !latest;
+  $("#thumbsUpBtn").classList.toggle("selected", latest?.feedback === "up");
+  $("#thumbsDownBtn").classList.toggle("selected", latest?.feedback === "down");
   $("#sourceList").innerHTML =
     latest?.sources
       .map(
@@ -274,7 +278,7 @@ function renderPublish() {
   $("#accessToggle").checked = agent.accessControl;
   $("#publishState").textContent = agent.published ? "Live" : "Draft";
   const slug = slugify(agent.name);
-  const url = `https://aira-studio.vercel.app/agents/${slug}`;
+  const url = `${window.location.origin}/agents/${slug}`;
   $("#shareUrl").value = url;
   $("#embedCode").textContent = `<script async src="${url}/widget.js" data-agent="${agent.id}"></script>`;
   $("#widgetAgentName").textContent = agent.name;
@@ -428,6 +432,20 @@ function answerQuestion(question) {
 
 function retrieve(query, knowledge) {
   const chunks = knowledge.flatMap((item) => chunkText(item.text).map((text) => ({ title: item.title, text })));
+  if (/summari[sz]e|overview|uploaded document|what.*document/i.test(query) && chunks.length) {
+    return {
+      score: 78,
+      sources: chunks.slice(0, 3).map((item) => ({
+        title: item.title,
+        preview: item.text.slice(0, 220)
+      })),
+      context: chunks
+        .slice(0, 2)
+        .map((item) => item.text)
+        .join("\n")
+    };
+  }
+
   const queryTerms = tokenize(query);
   const ranked = chunks
     .map((chunk) => {
@@ -454,7 +472,7 @@ function retrieve(query, knowledge) {
 
 function composeAnswer(question, agent, retrieval, confidence) {
   if (!retrieval.context || confidence < 35) {
-    return `${agent.fallback} I checked the available knowledge, but I could not find a reliable answer for "${question}".`;
+    return `${agent.fallback.replace(/[.!?]+$/, "")}. I checked the available knowledge, but I could not find a reliable answer for "${question}".`;
   }
 
   const sentences = retrieval.context
@@ -528,6 +546,22 @@ function slugify(value) {
 
 function copyText(value) {
   navigator.clipboard?.writeText(value);
+}
+
+function setLatestFeedback(value) {
+  const agent = activeAgent();
+  const latest = state.conversations.filter((item) => item.agentId === agent.id).at(-1);
+  if (!latest) return;
+  latest.feedback = value;
+  state.events.push({
+    id: crypto.randomUUID(),
+    agentId: agent.id,
+    type: "feedback",
+    payload: { conversationId: latest.id, value },
+    createdAt: new Date().toISOString()
+  });
+  saveState();
+  renderChat();
 }
 
 window.addEventListener("hashchange", () => setRoute(location.hash.replace("#", "") || "dashboard"));
@@ -610,6 +644,8 @@ $("#micBtn").addEventListener("click", startVoice);
 });
 
 $("#copyShareBtn").addEventListener("click", () => copyText($("#shareUrl").value));
+$("#thumbsUpBtn").addEventListener("click", () => setLatestFeedback("up"));
+$("#thumbsDownBtn").addEventListener("click", () => setLatestFeedback("down"));
 
 $("#agentList").addEventListener("click", (event) => {
   const row = event.target.closest("[data-agent]");

@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260508-qa3" />
   </head>
   <body>
     <div class="app-shell">
@@ -59,7 +59,7 @@
       <main class="main-panel">
         <header class="topbar">
           <div>
-            <p class="eyebrow">No-code RAG + voice agents</p>
+            <p class="eyebrow">AI agent workspace</p>
             <h1 id="pageTitle">Dashboard</h1>
           </div>
           <div class="topbar-actions">
@@ -80,7 +80,8 @@
                 <span>Voice ready</span>
               </div>
               <p class="eyebrow">Aira Studio</p>
-              <h2>Build AI agents from your documents in minutes.</h2>
+              <h2>Design, test, and publish document-trained agents.</h2>
+              <p class="hero-subcopy">Configure the persona, upload knowledge, and validate answers with confidence scores before you share.</p>
               <div class="hero-actions">
                 <a class="primary-button" href="#builder">
                   <span data-icon="sparkles"></span>
@@ -101,7 +102,7 @@
                   <strong>Agent prompt</strong>
                 </div>
                 <div class="prompt-box">
-                  Create a support agent from my product PDF. Make it friendly, concise, and able to answer with sources.
+                  Create a support agent from my product PDF. Keep answers concise, cite sources, and ask for detail when context is missing.
                 </div>
                 <div class="pipeline">
                   <div>
@@ -121,9 +122,15 @@
                     Chat
                   </div>
                 </div>
+                <div class="quality-row">
+                  <span>Confidence</span>
+                  <strong>87%</strong>
+                  <span>Sources</span>
+                  <strong>3</strong>
+                </div>
                 <div class="console-result">
                   <span class="pulse-dot"></span>
-                  Aira Support Assistant is ready to test
+                  Ready for tester review
                 </div>
               </div>
             </div>
@@ -293,6 +300,17 @@
                 <span id="confidenceBadge" class="status-pill">0%</span>
               </div>
               <div id="sourceList" class="source-list"></div>
+              <div class="feedback-panel">
+                <p>Response feedback</p>
+                <div>
+                  <button class="icon-button" id="thumbsUpBtn" aria-label="Helpful response">
+                    <span data-icon="thumbs-up"></span>
+                  </button>
+                  <button class="icon-button" id="thumbsDownBtn" aria-label="Poor response">
+                    <span data-icon="thumbs-down"></span>
+                  </button>
+                </div>
+              </div>
             </aside>
           </div>
         </section>
@@ -371,6 +389,6 @@
     </template>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=20260508-qa3"></script>
   </body>
 </html>
