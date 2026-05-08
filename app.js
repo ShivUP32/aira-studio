@@ -84,7 +84,8 @@ const agentTemplates = [
 
 const universalAgentGuidelines = `Universal response guidelines:
 - Be helpful, clear, and direct. Answer the user's actual question first, then add useful context only when it helps.
-- Follow the configured agent persona, tone, goal, greeting, and fallback message.
+- Follow the configured agent persona, tone, goal, and fallback message.
+- Treat the greeting as an opening chat message only. Do not repeat the greeting in normal answers.
 - Use the uploaded knowledge as the primary source of truth. Do not claim facts that are not supported by the available context.
 - If the user asks something outside the agent's domain or the knowledge is missing, say so briefly and ask one focused clarifying question.
 - If confidence is low, do not guess. Explain what is missing and suggest what document, FAQ, or detail should be added.
@@ -466,7 +467,7 @@ Goal: ${agent.goal}
 
 ${universalAgentGuidelines}
 
-Greeting: ${agent.greeting}
+Initial greeting shown once before chat starts: ${agent.greeting}
 Fallback: ${agent.fallback}`;
 }
 
@@ -791,6 +792,7 @@ async function requestLlmAnswer({ question, agent, retrieval }) {
         question,
         agentName: agent.name,
         systemPrompt: buildPrompt(agent),
+        priorMessageCount: state.conversations.filter((item) => item.agentId === agent.id).length,
         context: retrieval.context,
         sources: retrieval.sources
       })

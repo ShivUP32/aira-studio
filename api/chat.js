@@ -11,13 +11,13 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { question, systemPrompt, context, sources = [], agentName = "Aira Agent" } = req.body || {};
+    const { question, systemPrompt, context, sources = [], agentName = "Aira Agent", priorMessageCount = 0 } = req.body || {};
 
     if (!question || !systemPrompt) {
       return res.status(400).json({ error: "Missing question or systemPrompt" });
     }
 
-    const prompt = buildPrompt({ question, systemPrompt, context, sources, agentName });
+    const prompt = buildPrompt({ question, systemPrompt, context, sources, agentName, priorMessageCount });
     const groqResult = await callGroq(prompt);
     if (groqResult.ok) {
       return res.status(200).json({
@@ -47,11 +47,15 @@ module.exports = async function handler(req, res) {
   }
 };
 
-function buildPrompt({ question, systemPrompt, context, sources, agentName }) {
+function buildPrompt({ question, systemPrompt, context, sources, agentName, priorMessageCount }) {
   const sourceList = sources.map((source, index) => `${index + 1}. ${source.title}: ${source.preview}`).join("\n");
   return `${systemPrompt}
 
 Agent name: ${agentName}
+Prior agent responses in this conversation: ${priorMessageCount}
+
+Important greeting rule:
+The UI already shows the agent greeting before the user asks a question. Do not repeat the greeting. Answer the user's current question directly.
 
 Retrieved knowledge context:
 ${context || "No relevant context was retrieved."}
