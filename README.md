@@ -15,7 +15,7 @@ Open `http://localhost:4173`.
 ## Free-Tier Production Stack
 
 - Frontend: Vercel static hosting or Next.js free tier
-- Auth: Firebase Authentication with Google provider
+- Auth: No sign-in required for the current prototype
 - Database: Supabase Postgres free tier
 - Vector search: Supabase pgvector
 - File storage: Supabase Storage
@@ -40,14 +40,13 @@ Groq is used first. If Groq fails or is not configured, the API tries Gemini. If
 
 ## App Flow
 
-1. Continue with Google.
-2. Choose a starter template or custom agent.
-3. Complete the 3-step builder: Profile, Knowledge, Review & Test.
-4. Upload PDF/TXT or add manual FAQ knowledge.
-5. Test the agent in chat or with microphone input.
-6. Use the readiness checklist before publishing.
-7. Publish a public URL and embeddable widget snippet.
-8. Review analytics for conversations, confidence, unknown questions, and voice usage.
+1. Choose a starter template or custom agent.
+2. Complete the 3-step builder: Profile, Knowledge, Review & Test.
+3. Upload PDF/TXT or add manual FAQ knowledge.
+4. Test the agent in chat or with microphone input.
+5. Use the readiness checklist before publishing.
+6. Publish a public URL and embeddable widget snippet.
+7. Review analytics for conversations, confidence, unknown questions, and voice usage.
 
 ## Supabase Setup
 
@@ -67,14 +66,6 @@ Groq is used first. If Groq fails or is not configured, the API tries Gemini. If
    - Call Gemini/OpenAI.
    - Save `conversations` and `analytics_events`.
 
-## Firebase Setup
-
-1. Create a Firebase project.
-2. Enable Authentication > Google provider.
-3. Add your web app config.
-4. Replace the demo login in `app.js` with Firebase `signInWithPopup`.
-5. Send the Firebase ID token to Supabase or your API layer for row-level authorization.
-
 ## Current MVP Notes
 
-The included app uses localStorage and a lightweight in-browser retrieval simulation so the product flow works immediately. PDF extraction attempts to use PDF.js from a CDN; TXT and manual FAQ input work locally. The schema and README show where the production Supabase/Firebase/Gemini services attach.
+The included app uses localStorage and a lightweight in-browser retrieval simulation so the product flow works immediately. PDF extraction attempts to use PDF.js from a CDN; TXT and manual FAQ input work locally. The schema and README show where the production Supabase and LLM services attach. Google sign-in is intentionally not part of the current product direction.

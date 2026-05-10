@@ -865,7 +865,20 @@ pre {
 .chat-panel {
   min-height: 690px;
   display: grid;
-  grid-template-rows: auto minmax(360px, 1fr) auto auto;
+  grid-template-rows: auto auto minmax(360px, 1fr) auto auto;
+}
+
+.model-status {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: -6px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .chat-messages {

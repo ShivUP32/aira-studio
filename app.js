@@ -499,6 +499,8 @@ function renderChat() {
   const agent = activeAgent();
   $("#chatAgentName").textContent = agent.name;
   const messages = state.conversations.filter((item) => item.agentId === agent.id).slice(-20);
+  const latest = messages.at(-1);
+  $("#modelStatus").textContent = renderModelStatus(latest);
   $("#chatMessages").innerHTML =
     messages
       .map(
@@ -511,7 +513,6 @@ function renderChat() {
       )
       .join("") || `<div class="message agent">${escapeHtml(agent.greeting)}</div>`;
 
-  const latest = messages.at(-1);
   const suggestions = buildSuggestions(agent, latest);
   $("#suggestedQuestions").innerHTML = suggestions
     .map((question) => `<button type="button" data-suggestion="${escapeHtml(question)}">${escapeHtml(question)}</button>`)
@@ -530,7 +531,7 @@ function renderChat() {
         <div class="source-item">
           <div class="source-title-row">
             <strong>${escapeHtml(source.title)}</strong>
-            <span class="status-pill">${source.score ? `${Math.round(source.score)} match` : "used"}</span>
+            <span class="status-pill">${source.score ? `${Math.round(source.score)} relevance` : "used"}</span>
           </div>
           <small>${escapeHtml(source.preview)}</small>
         </div>`
@@ -539,6 +540,14 @@ function renderChat() {
   $("#confidenceReasoning").innerHTML = latest ? renderConfidenceReasoning(latest) : "";
   $("#qaReview").innerHTML = latest ? renderQaReview(latest) : "";
   $("#improvementLoop").innerHTML = latest ? renderImprovementLoop(latest) : "";
+}
+
+function renderModelStatus(latest) {
+  if (!latest) return "Model status: waiting for first question";
+  if (latest.streaming) return "Model status: generating response";
+  if (latest.provider === "groq") return `Model status: Groq active (${latest.model || "configured model"})`;
+  if (latest.provider === "gemini") return `Model status: Gemini fallback active (${latest.model || "configured model"})`;
+  return "Model status: local retrieval fallback. Check Vercel environment keys if this appears in production.";
 }
 
 function buildSuggestions(agent, latest) {
@@ -567,14 +576,15 @@ function renderConfidenceReasoning(message) {
   const bucket = message.confidence >= 70 ? "High" : message.confidence >= 45 ? "Medium" : "Low";
   const detail =
     message.confidence >= 70
-      ? "The answer is likely grounded in retrieved knowledge."
+      ? "The top source appears closely aligned with the question."
       : message.confidence >= 45
-        ? "The answer may be useful, but should be reviewed before publishing."
-        : "The answer needs better knowledge or a manual FAQ addition.";
+        ? "The answer has partial source support and should be reviewed before publishing."
+        : "The answer needs better knowledge, clearer FAQ structure, or a manual FAQ addition.";
   return `
     <div class="reasoning-card">
       <strong>${bucket} confidence</strong>
       <small>${detail}</small>
+      <small>Top source: ${message.sources[0]?.score ? `${Math.round(message.sources[0].score)} relevance` : "no strong source match"}.</small>
       <small>Voice latency: about ${Math.max(0.4, message.responseTime || 0.4).toFixed(1)}s.</small>
     </div>`;
 }
@@ -1120,14 +1130,15 @@ async function requestLlmAnswer({ question, agent, retrieval }) {
 }
 
 function retrieve(query, knowledge) {
-  const chunks = knowledge.flatMap((item) => chunkText(item.text).map((text) => ({ title: item.title, text })));
+  const chunks = knowledge.flatMap((item) => chunkKnowledge(item));
   if (/summari[sz]e|overview|uploaded document|what.*document/i.test(query) && chunks.length) {
     return {
-      score: 78,
+      score: 72,
       sources: chunks.slice(0, 3).map((item) => ({
         title: item.title,
         preview: item.text.slice(0, 220),
-        score: 78
+        text: item.text,
+        score: 72
       })),
       context: chunks
         .slice(0, 2)
@@ -1138,26 +1149,20 @@ function retrieve(query, knowledge) {
 
   const queryTerms = tokenize(query);
   const ranked = chunks
-    .map((chunk) => {
-      const terms = tokenize(chunk.text);
-      const overlap = queryTerms.filter((term) => terms.includes(term)).length;
-      const density = overlap / Math.max(1, queryTerms.length);
-      return {
-        ...chunk,
-        score: density * 100 + Math.min(18, overlap * 4)
-      };
-    })
+    .map((chunk) => ({ ...chunk, score: scoreChunk(query, queryTerms, chunk) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
+  const useful = ranked.filter((item) => item.score >= 12);
 
   return {
-    score: ranked[0]?.score || 0,
-    sources: ranked.map((item) => ({
+    score: useful[0]?.score || 0,
+    sources: useful.map((item) => ({
       title: item.title,
       preview: item.text.slice(0, 220),
+      text: item.text,
       score: item.score
     })),
-    context: ranked.map((item) => item.text).join("\n")
+    context: useful.map((item) => item.text).join("\n")
   };
 }
 
@@ -1166,26 +1171,141 @@ function composeAnswer(question, agent, retrieval, confidence) {
     return `${agent.fallback.replace(/[.!?]+$/, "")}. I checked the available knowledge, but I could not find a reliable answer for "${question}".`;
   }
 
-  const sentences = retrieval.context
+  const bestSource = retrieval.sources[0]?.text || retrieval.context;
+  const answerText = stripQuestionHeading(bestSource);
+  const sentences = answerText
     .split(/(?<=[.!?])\s+/)
     .map((sentence) => sentence.trim())
     .filter((sentence) => sentence.length > 30 && !/recommended prompt pattern|greeting:|fallback:/i.test(sentence))
-    .slice(0, 3);
-  const body = sentences.length ? sentences.join(" ") : retrieval.context.slice(0, 260);
+    .slice(0, 4);
+  const body = sentences.length ? sentences.join(" ") : answerText.slice(0, 360);
   return `**Answer**\n${body}\n\n**Next step**\n${confidence < 55 ? "This looks partially supported, so add clearer knowledge or test another question." : "Ask a follow-up question or test this answer before publishing."}`;
 }
 
-function chunkText(text) {
-  const clean = text.replace(/\s+/g, " ").trim();
-  const chunks = [];
-  for (let index = 0; index < clean.length; index += 700) {
-    chunks.push(clean.slice(index, index + 900));
-  }
-  return chunks.length ? chunks : [clean];
+function chunkKnowledge(item) {
+  return chunkText(item.text).map((text) => ({
+    title: item.title,
+    text,
+    heading: detectQuestionHeading(text)
+  }));
 }
 
+function chunkText(text) {
+  const clean = String(text)
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!clean) return [];
+
+  const marked = clean.replace(
+    /\s+(?=((?:Q[:.)]\s*)?(?:How|What|When|Where|Who|Why|Can|Do|Does|Is|Are|Should|Could|Will|Which)\b[^?\n]{8,180}\?))/g,
+    "\n\n"
+  );
+  const blocks = marked
+    .split(/\n{2,}/)
+    .map((block) => block.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const chunks = blocks.flatMap(splitLongChunk);
+  return chunks.length ? chunks : splitLongChunk(clean.replace(/\s+/g, " "));
+}
+
+function splitLongChunk(text) {
+  if (text.length <= 1100) return [text];
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const chunks = [];
+  let current = "";
+  for (const sentence of sentences) {
+    if (`${current} ${sentence}`.trim().length > 950 && current) {
+      chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current = `${current} ${sentence}`.trim();
+    }
+  }
+  if (current) chunks.push(current.trim());
+  return chunks;
+}
+
+function detectQuestionHeading(text) {
+  return String(text).match(/(?:^|\s)((?:Q[:.)]\s*)?(?:How|What|When|Where|Who|Why|Can|Do|Does|Is|Are|Should|Could|Will|Which)\b[^?]{8,180}\?)/i)?.[1] || "";
+}
+
+function stripQuestionHeading(text) {
+  const heading = detectQuestionHeading(text);
+  if (!heading) return String(text).trim();
+  const value = String(text);
+  const headingIndex = value.indexOf(heading);
+  return headingIndex >= 0 ? value.slice(headingIndex + heading.length).trim() : value.replace(heading, "").trim();
+}
+
+function scoreChunk(query, queryTerms, chunk) {
+  if (!queryTerms.length) return 0;
+  const chunkTerms = tokenize(chunk.text);
+  const headingTerms = tokenize(chunk.heading || "");
+  const bodyOverlap = queryTerms.filter((term) => chunkTerms.includes(term)).length;
+  const headingOverlap = queryTerms.filter((term) => headingTerms.includes(term)).length;
+  const bodyDensity = bodyOverlap / queryTerms.length;
+  const headingDensity = headingTerms.length ? headingOverlap / queryTerms.length : 0;
+  const normalizedQuery = normalizeForMatch(query);
+  const normalizedHeading = normalizeForMatch(chunk.heading || "");
+  const exactHeadingBoost = normalizedHeading && normalizedHeading.includes(normalizedQuery.slice(0, 80)) ? 18 : 0;
+  const importantOverlap = queryTerms.filter((term) => !commonSupportTerms.has(term) && headingTerms.includes(term)).length;
+  const score = headingDensity * 58 + bodyDensity * 28 + importantOverlap * 5 + exactHeadingBoost;
+  return Math.min(98, Math.round(score));
+}
+
+function normalizeForMatch(text) {
+  return tokenize(text).join(" ");
+}
+
+const commonSupportTerms = new Set([
+  "user",
+  "users",
+  "platform",
+  "agent",
+  "support",
+  "help",
+  "question",
+  "answer",
+  "document",
+  "profile",
+  "account"
+]);
+
 function tokenize(text) {
-  return [...new Set(text.toLowerCase().match(/[a-z0-9]+/g) || [])].filter((word) => word.length > 2);
+  const stopWords = new Set([
+    "the",
+    "and",
+    "for",
+    "with",
+    "from",
+    "that",
+    "this",
+    "your",
+    "you",
+    "how",
+    "what",
+    "when",
+    "where",
+    "who",
+    "why",
+    "can",
+    "do",
+    "does",
+    "are",
+    "is",
+    "should",
+    "could",
+    "would",
+    "will",
+    "about",
+    "into",
+    "using",
+    "available",
+    "different"
+  ]);
+  return [...new Set(String(text).toLowerCase().match(/[a-z0-9]+/g) || [])].filter((word) => word.length > 2 && !stopWords.has(word));
 }
 
 function speakChunk(text, agent) {

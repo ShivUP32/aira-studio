@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260508-product-audit" />
+    <link rel="stylesheet" href="./styles.css?v=20260510-trust-layer" />
   </head>
   <body>
     <div class="app-shell">
@@ -358,6 +358,7 @@
                   </button>
                 </div>
               </div>
+              <div class="model-status" id="modelStatus">Model status: waiting for first question</div>
               <div id="chatMessages" class="chat-messages"></div>
               <div class="test-library">
                 <button type="button" data-test-id="upload-readiness">Upload readiness</button>
@@ -415,8 +416,8 @@
                   <span>Embeddable widget</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="accessToggle" />
-                  <span>Require signed-in users</span>
+                  <input type="checkbox" id="accessToggle" disabled />
+                  <span>Access controls planned</span>
                 </label>
               </div>
               <div class="copy-field">
@@ -486,6 +487,6 @@
     </template>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script type="module" src="./app.js?v=20260508-product-audit"></script>
+    <script type="module" src="./app.js?v=20260510-trust-layer"></script>
   </body>
 </html>
