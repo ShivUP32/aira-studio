@@ -8,6 +8,11 @@
   --color-aira-line: #162135;
   --color-aira-forest: #064E3B;
   --color-aira-forest-light: #065F46;
+  --color-background: #050C1A;
+  --color-foreground: #EFF4F8;
+  --color-card: #091323;
+  --color-border: #162135;
+  --color-primary: #10B981;
 }
 
 @source inline("text-[10px] text-[11px] ring-offset-aira-bg bg-[radial-gradient(ellipse_80%_50%_at_20%_50%,rgba(16,185,129,0.08)_0%,transparent_70%)] border-[rgba(16,185,129,0.15)] border-[rgba(16,185,129,0.2)] shadow-[0_0_16px_rgba(16,185,129,0.08)] shadow-[0_0_24px_rgba(16,185,129,0.07)] shadow-[0_0_24px_rgba(16,185,129,0.08)] shadow-[0_0_40px_rgba(16,185,129,0.08),0_8px_32px_rgba(0,0,0,0.4)] shadow-[0_1px_2px_rgba(0,0,0,0.5),0_0_0_1px_rgba(16,185,129,0.3)] shadow-[0_1px_2px_rgba(0,0,0,0.5)] shadow-[0_1px_3px_rgba(0,0,0,0.4),0_8px_24px_rgba(0,0,0,0.3)] shadow-[0_4px_12px_rgba(16,185,129,0.35)]");
@@ -55,11 +60,14 @@
   box-sizing: border-box;
 }
 
-html { color-scheme: dark; }
+html {
+  color-scheme: dark;
+  background-color: #050C1A;
+}
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: #050C1A;
+  color: #EFF4F8;
   font-family: var(--font-geist-sans), -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
