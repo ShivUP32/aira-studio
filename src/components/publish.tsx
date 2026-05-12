@@ -1,9 +1,12 @@
 "use client";
 import { motion } from "framer-motion";
-import { Copy, MessageCircle, Check } from "lucide-react";
+import { Copy, MessageCircle, Check, CheckCircle2, Circle } from "lucide-react";
 import { useState } from "react";
 import type { AppState, Agent } from "@/lib/agent-state";
 import { slugify } from "@/lib/agent-state";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 function getReadiness(agent: Agent, conversations: AppState["conversations"]) {
@@ -41,83 +44,101 @@ export function Publish({ state, onStateChange }: PublishProps) {
   return (
     <div className="grid md:grid-cols-2 gap-6">
       <div className="space-y-4">
-        {/* Publish controls */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h3 className="font-semibold text-sm">Publish Agent</h3>
-            <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", agent.published ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : allReady ? "bg-blue-100 text-blue-700" : "bg-secondary text-muted-foreground")}>
-              {agent.published ? "Live" : allReady ? "Ready" : "Needs setup"}
-            </span>
-          </div>
-
-          {/* Readiness */}
-          <div className="divide-y divide-border">
-            {readiness.map((check) => (
-              <div key={check.label} className={cn("flex items-start gap-3 px-4 py-3", check.done && "bg-green-50/50 dark:bg-green-900/10")}>
-                <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5", check.done ? "border-green-500 bg-green-500" : "border-muted-foreground")}>
-                  {check.done && <Check className="w-2.5 h-2.5 text-white" />}
-                </div>
-                <div>
-                  <div className="font-medium text-sm">{check.label}</div>
-                  <div className="text-xs text-muted-foreground">{check.detail}</div>
-                </div>
+        {/* Publish controls card */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="bg-[#091323] border-[#162135] overflow-hidden">
+            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-slate-100">Publish Agent</CardTitle>
+                <Badge variant={agent.published ? "live" : allReady ? "default" : "draft"}>
+                  {agent.published ? "Live" : allReady ? "Ready" : "Needs setup"}
+                </Badge>
               </div>
-            ))}
-          </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {/* Readiness checklist */}
+              <div className="divide-y divide-[#162135]">
+                {readiness.map((check) => (
+                  <div key={check.label} className={cn("flex items-start gap-3 px-5 py-3.5", check.done && "bg-emerald-500/5")}>
+                    {check.done ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <div className="font-medium text-sm text-slate-200">{check.label}</div>
+                      <div className="text-xs text-slate-500">{check.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-          {/* Toggles */}
-          <div className="divide-y divide-border border-t border-border">
-            {[
-              { key: "published", label: "Public share URL", disabled: !allReady },
-              { key: "embedEnabled", label: "Embeddable widget", disabled: false },
-              { key: "accessControl", label: "Access controls (planned)", disabled: true },
-            ].map(({ key, label, disabled }) => (
-              <label key={key} className={cn("flex items-center justify-between px-4 py-3", disabled && !agent[key as keyof Agent] && "opacity-50")}>
-                <span className="text-sm">{label}</span>
-                <div className="relative">
-                  <input type="checkbox" className="sr-only peer" checked={Boolean(agent[key as keyof Agent])} disabled={disabled && key !== "embedEnabled"}
-                    onChange={(e) => {
-                      if (key === "published" && !allReady) return;
-                      updateAgent({ [key]: e.target.checked });
-                    }} />
-                  <div className="w-9 h-5 rounded-full bg-secondary peer-checked:bg-foreground transition-colors cursor-pointer" />
-                  <div className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-background shadow transition-transform peer-checked:translate-x-4" />
-                </div>
-              </label>
-            ))}
-          </div>
+              {/* Toggle rows */}
+              <div className="divide-y divide-[#162135] border-t border-[#162135]">
+                {[
+                  { key: "published", label: "Public share URL", disabled: !allReady },
+                  { key: "embedEnabled", label: "Embeddable widget", disabled: false },
+                  { key: "accessControl", label: "Access controls (planned)", disabled: true },
+                ].map(({ key, label, disabled }) => (
+                  <label key={key} className={cn("flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-white/3 transition-colors", disabled && !agent[key as keyof Agent] && "opacity-50 cursor-not-allowed")}>
+                    <span className="text-sm text-slate-300">{label}</span>
+                    <div className="relative h-5 w-10">
+                      <input type="checkbox" className="sr-only peer" checked={Boolean(agent[key as keyof Agent])} disabled={disabled && key !== "embedEnabled"}
+                        onChange={(e) => {
+                          if (key === "published" && !allReady) return;
+                          updateAgent({ [key]: e.target.checked });
+                        }} />
+                      <div className="absolute inset-0 rounded-full bg-white/10 peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-emerald-600 transition-colors" />
+                      <motion.div
+                        className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform"
+                        animate={{ x: agent[key as keyof Agent] ? 20 : 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        {/* Share URL */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border"><h3 className="font-semibold text-sm">Share URL</h3></div>
-          <div className="p-4 space-y-3">
-            <div className="flex gap-2">
-              <input readOnly value={shareUrl} className="flex-1 h-9 rounded-lg border border-input bg-muted px-3 text-sm text-muted-foreground" />
-              <button onClick={copyUrl} className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border hover:bg-accent transition-colors text-sm">
-                {copiedUrl ? <><Check className="w-3.5 h-3.5 text-green-500" />Copied</> : <><Copy className="w-3.5 h-3.5" />Copy</>}
-              </button>
-            </div>
-            <pre className="text-[11px] text-muted-foreground bg-muted rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-mono">{embedCode}</pre>
-          </div>
+        {/* Share URL card */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Card className="bg-[#091323] border-[#162135] overflow-hidden">
+            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+              <CardTitle className="text-slate-100">Share URL</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex gap-2">
+                <input readOnly value={shareUrl} className="flex-1 h-9 bg-[#050C1A] border border-[#162135] rounded-lg px-3 text-xs text-slate-400 truncate" />
+                <button onClick={copyUrl} className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#162135] hover:border-emerald-500/30 hover:bg-emerald-500/5 text-slate-400 hover:text-emerald-400 transition-all text-sm">
+                  {copiedUrl ? <><Check className="w-3.5 h-3.5" /></> : <><Copy className="w-3.5 h-3.5" /></>}
+                </button>
+              </div>
+              <pre className="text-[11px] text-slate-500 bg-[#050C1A] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-mono border border-[#162135]">{embedCode}</pre>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
 
       {/* Widget preview */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex flex-col items-center justify-center">
-        <div className="w-72 bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-foreground text-background">
-            <div className="w-8 h-8 rounded-full bg-background/20 flex items-center justify-center font-bold text-sm">A</div>
-            <strong className="text-sm">{agent.name}</strong>
+        <div className="w-72 bg-[#091323] border border-[#162135] rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.08),0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
+          <div className="bg-gradient-to-r from-[#064E3B] to-[#065F46] px-4 py-3.5 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm">
+              {agent.name.charAt(0).toUpperCase()}
+            </div>
+            <strong className="text-sm font-semibold text-slate-100">{agent.name}</strong>
+            <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
-          <div className="p-4 space-y-4">
-            <p className="text-sm text-muted-foreground">{agent.greeting}</p>
-            <button className="w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+          <div className="p-5 space-y-4">
+            <p className="text-sm text-slate-400">{agent.greeting}</p>
+            <button className="w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-sm font-medium transition-all">
               <MessageCircle className="w-4 h-4" /> Open Chat
             </button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-4">Widget preview</p>
+        <p className="text-xs text-slate-600 mt-3 text-center">Widget preview</p>
       </motion.div>
     </div>
   );

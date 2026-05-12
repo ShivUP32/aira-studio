@@ -2,14 +2,15 @@
 import { motion } from "framer-motion";
 import type { AppState } from "@/lib/agent-state";
 import { average } from "@/lib/agent-state";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-function MetricCard({ label, value, hint }: { label: string; value: string | number; hint: string }) {
+function MetricCard({ label, value, hint, delay }: { label: string; value: string | number; hint: string; delay?: number }) {
   return (
-    <motion.article initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground font-medium">{label}</span>
-      <strong className="text-2xl font-bold tracking-tight">{value}</strong>
-      <small className="text-xs text-muted-foreground">{hint}</small>
+    <motion.article initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: delay || 0 }}
+      className="bg-[#091323] border border-[#162135] rounded-xl p-5 hover:border-[rgba(16,185,129,0.15)] transition-all">
+      <span className="text-xs text-slate-500 font-medium">{label}</span>
+      <strong className="text-2xl font-bold text-slate-100 mt-1.5 tabular-nums">{value}</strong>
+      <small className="text-xs text-slate-600 mt-0.5 block">{hint}</small>
     </motion.article>
   );
 }
@@ -36,9 +37,9 @@ export function Analytics({ state }: AnalyticsProps) {
   ];
 
   const buckets = [
-    { label: "0–40", count: conversations.filter((c) => c.confidence <= 40).length, color: "bg-red-400" },
-    { label: "41–70", count: conversations.filter((c) => c.confidence > 40 && c.confidence <= 70).length, color: "bg-yellow-400" },
-    { label: "71–100", count: conversations.filter((c) => c.confidence > 70).length, color: "bg-green-400" },
+    { label: "0–40", count: conversations.filter((c) => c.confidence <= 40).length, gradient: "from-red-500 to-red-400" },
+    { label: "41–70", count: conversations.filter((c) => c.confidence > 40 && c.confidence <= 70).length, gradient: "from-amber-500 to-yellow-400" },
+    { label: "71–100", count: conversations.filter((c) => c.confidence > 70).length, gradient: "from-emerald-500 to-emerald-400" },
   ];
 
   const unknowns = conversations.filter((c) => c.confidence < 45).slice(-6);
@@ -46,61 +47,92 @@ export function Analytics({ state }: AnalyticsProps) {
 
   return (
     <div className="space-y-6">
+      {/* Metrics grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {metrics.map((m, i) => <motion.div key={m.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}><MetricCard {...m} /></motion.div>)}
+        {metrics.map((m, i) => <MetricCard key={m.label} {...m} delay={i * 0.06} />)}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Confidence chart */}
-        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border"><h3 className="font-semibold text-sm">Confidence Distribution</h3></div>
-          <div className="p-4 space-y-3">
-            {buckets.map(({ label, count, color }) => (
-              <div key={label} className="flex items-center gap-3">
-                <span className="text-xs font-medium w-12 text-muted-foreground">{label}</span>
-                <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${(count / total) * 100}%` }} transition={{ duration: 0.8, delay: 0.3 }} className={`h-full rounded-full ${color}`} />
+        {/* Confidence distribution card */}
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
+            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+              <CardTitle className="text-slate-100">Confidence Distribution</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              {buckets.map(({ label, count, gradient }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="text-xs font-medium w-14 text-slate-500">{label}</span>
+                  <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(count / total) * 100}%` }}
+                      transition={{ duration: 0.8, delay: 0.3 }}
+                      className={`h-full rounded-full bg-gradient-to-r ${gradient}`}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-500 w-6 text-right">{count}</span>
                 </div>
-                <span className="text-xs text-muted-foreground w-6 text-right">{count}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </CardContent>
+          </Card>
         </motion.section>
 
-        {/* Unknown questions */}
-        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border"><h3 className="font-semibold text-sm">Unknown Questions</h3></div>
-          <div className="divide-y divide-border">
-            {unknowns.length ? unknowns.map((c, i) => (
-              <div key={i} className="px-4 py-2.5 text-sm text-muted-foreground">{c.question}</div>
-            )) : <div className="px-4 py-4 text-xs text-muted-foreground">No unknown questions yet.</div>}
-          </div>
+        {/* Unknown questions card */}
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
+            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+              <CardTitle className="text-slate-100">Unknown Questions</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-[#162135]">
+                {unknowns.length ? unknowns.map((c, i) => (
+                  <div key={i} className="px-4 py-2.5 text-sm text-slate-400">{c.question}</div>
+                )) : <div className="px-4 py-4 text-xs text-slate-600">No unknown questions yet.</div>}
+              </div>
+            </CardContent>
+          </Card>
         </motion.section>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Failed intents */}
-        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border"><h3 className="font-semibold text-sm">Top Failed Intents</h3></div>
-          <div className="divide-y divide-border">
-            {failed.length ? failed.map((c, i) => (
-              <div key={i} className="px-4 py-2.5 text-sm text-muted-foreground truncate">{c.question}</div>
-            )) : <div className="px-4 py-4 text-xs text-muted-foreground">No failed intents yet.</div>}
-          </div>
+        {/* Failed intents card */}
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
+            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+              <CardTitle className="text-slate-100">Top Failed Intents</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-[#162135]">
+                {failed.length ? failed.map((c, i) => (
+                  <div key={i} className="px-4 py-2.5 text-sm text-slate-400 truncate">{c.question}</div>
+                )) : <div className="px-4 py-4 text-xs text-slate-600">No failed intents yet.</div>}
+              </div>
+            </CardContent>
+          </Card>
         </motion.section>
 
-        {/* Suggestions */}
-        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border"><h3 className="font-semibold text-sm">Improvement Suggestions</h3></div>
-          <div className="divide-y divide-border">
-            {conversations.some((c) => c.confidence < 45) ? (
-              ["Add low-confidence questions as Manual FAQ entries.", "Upload clearer source documents for repeated unknowns.", "Retest failed answers before publishing."].map((s, i) => (
-                <div key={i} className="px-4 py-2.5 text-sm text-muted-foreground">{s}</div>
-              ))
-            ) : (
-              <div className="px-4 py-4 text-xs text-muted-foreground">Keep testing common user questions to build confidence.</div>
-            )}
-          </div>
+        {/* Improvement suggestions card */}
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
+            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+              <CardTitle className="text-slate-100">Improvement Suggestions</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-[#162135]">
+                {conversations.some((c) => c.confidence < 45) ? (
+                  ["Add low-confidence questions as Manual FAQ entries.", "Upload clearer source documents for repeated unknowns.", "Retest failed answers before publishing."].map((s, i) => (
+                    <div key={i} className="px-4 py-2.5 text-sm text-slate-400 flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                      <span>{s}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-4 text-xs text-slate-600">Keep testing common user questions to build confidence.</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </motion.section>
       </div>
     </div>
