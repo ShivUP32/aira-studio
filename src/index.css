@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* ─── Dark theme design tokens ─────────────────────────────────────────────
+   Placed AFTER the Tailwind import so these unlayered rules win over every
+   Tailwind @layer (theme / base / utilities). They are in the same
+   stylesheet that Vite injects, so cascade order is deterministic in both
+   dev (JS-injected <style>) and production (linked .css file).
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg:            #0a0c12;
+  --surface:       #111520;
+  --surface-2:     #181c28;
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-accent: rgba(0, 212, 160, 0.3);
+  --accent:        #00d4a0;
+  --accent-dim:    rgba(0, 212, 160, 0.12);
+  --accent-glow:   rgba(0, 212, 160, 0.25);
+  --text:          #f0f2f5;
+  --text-muted:    #6b7280;
+  --text-secondary:#9ca3af;
+  --red:           #f87171;
+  --yellow:        #fbbf24;
+}
+
+html {
+  color-scheme: dark;
+  background-color: #0a0c12;
+}
+
+body {
+  margin: 0;
+  background-color: #0a0c12;
+  color: #f0f2f5;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: row;
+  background-color: #0a0c12;
+  color: #f0f2f5;
+}
+
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.accent-glow {
+  box-shadow: 0 0 24px rgba(0, 212, 160, 0.25);
+}
+
+h1, h2, h3, h4, p {
+  margin: 0;
+}
