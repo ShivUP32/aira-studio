@@ -7,6 +7,7 @@ import {
 import { useApp } from '../lib/store'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { buildSystemPrompt } from '../lib/data'
 import type { Message } from '../lib/store'
 
 function makeId() {
@@ -31,23 +32,6 @@ const QUICK_ACTION_RESPONSES: Record<string, { content: string; confidence: numb
   },
 }
 
-const MOCK_RESPONSES: { content: string; confidence: number; sources: string[] }[] = [
-  {
-    content: "## Supported File Formats\n\nAira Studio supports the following formats for knowledge base ingestion:\n\n- **PDF** — most common for documentation and manuals\n- **TXT** — plain text files\n- **Markdown (.md)** — ideal for structured docs\n- **DOCX** — Word documents\n\nFiles are automatically **chunked** and stored in the vector database for semantic retrieval.",
-    confidence: 0.91,
-    sources: ['Aira Studio PRD Summary', 'File Upload Guide'],
-  },
-  {
-    content: "## How Confidence Score Works\n\nThe confidence score measures how well retrieved knowledge chunks match your query.\n\n- **Above 80%** — High quality, source-backed answer\n- **50–80%** — Moderate match, partial coverage\n- **Below 50%** — Low confidence, fallback response triggered\n\nScores are computed using **cosine similarity** between your query embedding and the top-k retrieved chunks.",
-    confidence: 0.87,
-    sources: ['Aira Studio PRD Summary'],
-  },
-  {
-    content: "## Voice Mode\n\nVoice mode uses the **Web Speech API** — no additional API keys required.\n\n- **Speech-to-text** — click the mic icon to speak your question\n- **Text-to-speech** — responses are read aloud automatically\n- **Toggle** — click the volume icon to mute or unmute\n\nVoice mode works in all modern browsers that support the Web Speech API.",
-    confidence: 0.84,
-    sources: ['Voice Integration Guide'],
-  },
-]
 
 const QUICK_TESTS = [
   'Upload readiness',
@@ -210,8 +194,8 @@ export function Test() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [conv.messages, isTyping])
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isTyping) return
 
     const userMsg: Message = {
       id: makeId(),
@@ -224,32 +208,75 @@ export function Test() {
     setIsTyping(true)
     setModelStatus('thinking')
 
-    const mockResp = QUICK_ACTION_RESPONSES[text.trim()] ?? MOCK_RESPONSES[conv.messages.length % MOCK_RESPONSES.length]
-    // Compute confidence before the timeout to avoid impure side effects
-    const confidenceScore = mockResp.confidence
-    const randomDelay = Math.random() * 800
+    // Use quick action mock for demo buttons, Groq for everything else
+    const mockResp = QUICK_ACTION_RESPONSES[text.trim()]
 
-    setTimeout(() => {
+    if (mockResp) {
       const assistantMsg: Message = {
         id: makeId(),
         role: 'assistant',
         content: mockResp.content,
-        confidence: confidenceScore,
+        confidence: mockResp.confidence,
         sources: mockResp.sources,
       }
-
       setStreamingMsgId(assistantMsg.id)
       setConv(prev => ({
         ...prev,
         messages: [...prev.messages, assistantMsg],
-        lastConfidence: confidenceScore,
+        lastConfidence: mockResp.confidence,
         lastSources: mockResp.sources,
       }))
       speak(mockResp.content)
       setIsTyping(false)
       setModelStatus('ready')
       setFeedback(null)
-    }, 1200 + randomDelay)
+      return
+    }
+
+    // Call real Groq API
+    try {
+      const systemPrompt = activeAgent ? buildSystemPrompt(activeAgent) : 'You are a helpful assistant.'
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: text.trim(),
+          systemPrompt,
+          agentName: activeAgent?.name ?? 'Aira Agent',
+          priorMessageCount: conv.messages.filter(m => m.role === 'assistant').length,
+        }),
+      })
+
+      const data = await res.json()
+      const answer = res.ok ? (data.answer ?? 'No response received.') : `Error: ${data.error ?? 'Unknown error'}`
+      const confidence = res.ok ? 0.85 : 0
+
+      const assistantMsg: Message = {
+        id: makeId(),
+        role: 'assistant',
+        content: answer,
+        confidence,
+        sources: [],
+      }
+
+      setStreamingMsgId(assistantMsg.id)
+      setConv(prev => ({
+        ...prev,
+        messages: [...prev.messages, assistantMsg],
+        lastConfidence: confidence,
+        lastSources: [],
+      }))
+      speak(answer)
+      setIsTyping(false)
+      setModelStatus('ready')
+      setFeedback(null)
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to reach the API.'
+      const assistantMsg: Message = { id: makeId(), role: 'assistant', content: `Error: ${errMsg}`, confidence: 0, sources: [] }
+      setConv(prev => ({ ...prev, messages: [...prev.messages, assistantMsg] }))
+      setIsTyping(false)
+      setModelStatus('ready')
+    }
   }
 
   const reset = () => {
