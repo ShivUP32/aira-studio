@@ -63,6 +63,8 @@
 html {
   color-scheme: dark;
   background-color: #050C1A;
+  forced-color-adjust: none;
+  -webkit-forced-color-adjust: none;
 }
 
 body {
@@ -70,6 +72,14 @@ body {
   color: #EFF4F8;
   font-family: var(--font-geist-sans), -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  forced-color-adjust: none;
+  -webkit-forced-color-adjust: none;
+}
+
+/* Opt every element out of forced-colors mode so our dark theme is preserved */
+*, *::before, *::after {
+  forced-color-adjust: none;
+  -webkit-forced-color-adjust: none;
 }
 
 /* Gradient text utility */
