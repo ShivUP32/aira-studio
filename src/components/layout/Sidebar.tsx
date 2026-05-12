@@ -41,22 +41,13 @@ export function Sidebar({ route, onNavigate }: SidebarProps) {
       {/* Brand */}
       <div style={{ padding: '24px 20px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 8,
-              background: 'var(--accent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 900,
-              fontSize: 18,
-              color: '#0a0c12',
-              flexShrink: 0,
-            }}
-          >
-            A
+          <div style={{ flexShrink: 0 }}>
+            <svg width="34" height="34" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="7" fill="#111520"/>
+              <rect width="32" height="32" rx="7" stroke="#00d4a0" strokeWidth="1" strokeOpacity="0.3"/>
+              <path d="M16 6L24.5 25H20.5L18.8 21H13.2L11.5 25H7.5L16 6Z" fill="#00d4a0"/>
+              <path d="M14.4 18H17.6L16 13.5L14.4 18Z" fill="#111520"/>
+            </svg>
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', lineHeight: 1.2 }}>
