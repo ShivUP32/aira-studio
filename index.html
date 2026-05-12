@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" style="background:#0a0c12;color-scheme:dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -8,6 +8,65 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <!-- Theme variables: injected before ANY css/js so nothing can override them -->
+    <style>
+      :root {
+        --bg:           #0a0c12;
+        --surface:      #111520;
+        --surface-2:    #181c28;
+        --border:       rgba(255,255,255,0.07);
+        --border-accent:rgba(0,212,160,0.3);
+        --accent:       #00d4a0;
+        --accent-dim:   rgba(0,212,160,0.12);
+        --accent-glow:  rgba(0,212,160,0.25);
+        --text:         #f0f2f5;
+        --text-muted:   #6b7280;
+        --text-secondary:#9ca3af;
+        --red:          #f87171;
+        --yellow:       #fbbf24;
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html {
+        color-scheme: dark;
+        background: #0a0c12 !important;
+      }
+      body {
+        margin: 0;
+        background: #0a0c12 !important;
+        background: var(--bg) !important;
+        color: #f0f2f5;
+        color: var(--text);
+        font-family: 'Inter', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      #root {
+        width: 100%;
+        min-height: 100svh;
+        display: flex;
+        flex-direction: row;
+        background: #0a0c12;
+        background: var(--bg);
+        color: #f0f2f5;
+        color: var(--text);
+      }
+      .dot-grid {
+        background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+        background-size: 28px 28px;
+      }
+      .glass {
+        background: rgba(255,255,255,0.04);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.07);
+        border: 1px solid var(--border);
+      }
+      .accent-glow {
+        box-shadow: 0 0 24px rgba(0,212,160,0.25);
+        box-shadow: 0 0 24px var(--accent-glow);
+      }
+      h1,h2,h3,h4,p { margin: 0; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
