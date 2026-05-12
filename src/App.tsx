@@ -25,7 +25,7 @@ function AppInner() {
   const navigate = (r: Route) => setRoute(r)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', minHeight: '100svh', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'row', minHeight: '100svh', width: '100%', background: 'var(--bg, #0a0c12)', color: 'var(--text, #f0f2f5)' }}>
       <Sidebar route={route} onNavigate={navigate} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <Topbar route={route} onNavigate={navigate} />
