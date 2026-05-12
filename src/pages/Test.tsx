@@ -15,17 +15,17 @@ function makeId() {
 
 const MOCK_RESPONSES: { content: string; confidence: number; sources: string[] }[] = [
   {
-    content: "Based on the uploaded documentation, Aira Studio supports PDF, TXT, Markdown, and DOCX files for knowledge base ingestion. Files are automatically chunked and stored in the vector database for retrieval.",
+    content: "## Supported File Formats\n\nAira Studio supports the following formats for knowledge base ingestion:\n\n- **PDF** — most common for documentation and manuals\n- **TXT** — plain text files\n- **Markdown (.md)** — ideal for structured docs\n- **DOCX** — Word documents\n\nFiles are automatically **chunked** and stored in the vector database for semantic retrieval.",
     confidence: 0.91,
     sources: ['Aira Studio PRD Summary', 'File Upload Guide'],
   },
   {
-    content: "The confidence score represents how well the retrieved knowledge chunks match your query. Scores above 80% indicate high-quality, source-backed answers. Scores below 50% trigger the fallback response.",
+    content: "## How Confidence Score Works\n\nThe confidence score measures how well retrieved knowledge chunks match your query.\n\n- **Above 80%** — High quality, source-backed answer\n- **50–80%** — Moderate match, partial coverage\n- **Below 50%** — Low confidence, fallback response triggered\n\nScores are computed using **cosine similarity** between your query embedding and the top-k retrieved chunks.",
     confidence: 0.87,
     sources: ['Aira Studio PRD Summary'],
   },
   {
-    content: "Voice mode uses the Web Speech API for both speech-to-text input and text-to-speech output. No additional API keys are required. Simply click the microphone icon to activate voice input.",
+    content: "## Voice Mode\n\nVoice mode uses the **Web Speech API** — no additional API keys required.\n\n- **Speech-to-text** — click the mic icon to speak your question\n- **Text-to-speech** — responses are read aloud automatically\n- **Toggle** — click the volume icon to mute or unmute\n\nVoice mode works in all modern browsers that support the Web Speech API.",
     confidence: 0.84,
     sources: ['Voice Integration Guide'],
   },
@@ -51,6 +51,52 @@ interface ActiveConversation {
   lastSources: string[]
 }
 
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>
+      : part
+  )
+}
+
+function MarkdownText({ content }: { content: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {content.split('\n').map((line, i) => {
+        if (line.startsWith('## '))
+          return <div key={i} style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 6, marginBottom: 2 }}>{renderInline(line.slice(3))}</div>
+        if (line.startsWith('# '))
+          return <div key={i} style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', marginTop: 6, marginBottom: 2 }}>{renderInline(line.slice(2))}</div>
+        if (line.startsWith('- '))
+          return <div key={i} style={{ display: 'flex', gap: 7, paddingLeft: 4 }}><span style={{ color: 'var(--accent)', flexShrink: 0 }}>•</span><span>{renderInline(line.slice(2))}</span></div>
+        if (line === '')
+          return <div key={i} style={{ height: 4 }} />
+        return <div key={i}>{renderInline(line)}</div>
+      })}
+    </div>
+  )
+}
+
+function StreamingText({ content, streamingId, msgId }: { content: string; streamingId: string | null; msgId: string }) {
+  const [displayed, setDisplayed] = useState(streamingId === msgId ? '' : content)
+
+  useEffect(() => {
+    if (streamingId !== msgId) { setDisplayed(content); return }
+    setDisplayed('')
+    const words = content.split(' ')
+    let i = 0
+    const interval = setInterval(() => {
+      i++
+      setDisplayed(words.slice(0, i).join(' '))
+      if (i >= words.length) clearInterval(interval)
+    }, 90)
+    return () => clearInterval(interval)
+  }, [content, streamingId, msgId])
+
+  return <MarkdownText content={displayed} />
+}
+
 const containerVariants = {
   animate: { transition: { staggerChildren: 0.05 } },
 }
@@ -73,6 +119,7 @@ export function Test() {
   const [modelStatus, setModelStatus] = useState<'waiting' | 'thinking' | 'ready'>('waiting')
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const speak = (text: string) => {
@@ -116,6 +163,7 @@ export function Test() {
         sources: mockResp.sources,
       }
 
+      setStreamingMsgId(assistantMsg.id)
       setConv(prev => ({
         ...prev,
         messages: [...prev.messages, assistantMsg],
@@ -275,11 +323,14 @@ export function Test() {
                     background: msg.role === 'user' ? 'var(--accent)' : 'var(--surface-2)',
                     color: msg.role === 'user' ? '#0a0c12' : 'var(--text)',
                     fontSize: 13,
-                    lineHeight: 1.55,
+                    lineHeight: 1.65,
                     fontWeight: msg.role === 'user' ? 500 : 400,
                   }}
                 >
-                  {msg.content}
+                  {msg.role === 'user'
+                    ? msg.content
+                    : <StreamingText content={msg.content} streamingId={streamingMsgId} msgId={msg.id} />
+                  }
                 </div>
                 {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
                   <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
