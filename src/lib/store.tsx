@@ -111,9 +111,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) return JSON.parse(raw) as AppState
+      if (raw) {
+        const parsed = JSON.parse(raw) as AppState
+        // Validate that parsed value has required agents array
+        if (parsed && Array.isArray(parsed.agents)) {
+          return parsed
+        }
+      }
     } catch {
-      // ignore
+      // ignore parsing errors
     }
     return defaultState()
   })

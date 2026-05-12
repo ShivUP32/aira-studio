@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Headphones, BadgeDollarSign, GraduationCap, HelpCircle,
@@ -88,12 +88,16 @@ export function Builder({ onNavigate }: BuilderProps) {
   const [faqText, setFaqText] = useState('')
   const [isDragging, setIsDragging] = useState(false)
 
+  // Generate a stable agent ID and creation timestamp so preview and saved agent match
+  const agentId = useMemo(() => makeId(), [])
+  const createdAt = useMemo(() => Date.now(), [])
+
   const builtAgent: Agent = {
-    id: makeId(),
+    id: agentId,
     ...form,
     knowledge,
     published: false,
-    createdAt: Date.now(),
+    createdAt,
   }
 
   const systemPrompt = buildSystemPrompt(builtAgent)
@@ -136,7 +140,7 @@ export function Builder({ onNavigate }: BuilderProps) {
   }
 
   const handleSave = () => {
-    const agent: Agent = { ...builtAgent, id: makeId() }
+    const agent: Agent = builtAgent
     dispatch({ type: 'CREATE_AGENT', agent })
     onNavigate('test')
   }

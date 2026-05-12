@@ -7,7 +7,7 @@ import {
 import { useApp } from '../lib/store'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
-import type { Message, Conversation } from '../lib/store'
+import type { Message } from '../lib/store'
 
 function makeId() {
   return Math.random().toString(36).slice(2, 10)
@@ -93,35 +93,32 @@ export function Test() {
     setModelStatus('thinking')
 
     const mockResp = MOCK_RESPONSES[conv.messages.length % MOCK_RESPONSES.length]
+    // Compute confidence before the timeout to avoid impure side effects
+    const confidenceScore = mockResp.confidence
+    const randomDelay = Math.random() * 800
 
     setTimeout(() => {
       const assistantMsg: Message = {
         id: makeId(),
         role: 'assistant',
         content: mockResp.content,
-        confidence: mockResp.confidence,
+        confidence: confidenceScore,
         sources: mockResp.sources,
       }
+      // Use ADD_MESSAGE to append single message instead of reconstructing full list
+      dispatch({ type: 'ADD_MESSAGE', conversationId: conv.id, message: userMsg })
+      dispatch({ type: 'ADD_MESSAGE', conversationId: conv.id, message: assistantMsg })
+
       setConv(prev => ({
         ...prev,
-        messages: [...prev.messages, assistantMsg],
-        lastConfidence: mockResp.confidence,
+        messages: [...prev.messages, userMsg, assistantMsg],
+        lastConfidence: confidenceScore,
         lastSources: mockResp.sources,
       }))
       setIsTyping(false)
       setModelStatus('ready')
       setFeedback(null)
-
-      // Save to state
-      const conversation: Conversation = {
-        id: conv.id,
-        agentId: state.activeAgentId,
-        messages: [...conv.messages, userMsg, assistantMsg],
-        confidence: mockResp.confidence,
-        timestamp: Date.now(),
-      }
-      dispatch({ type: 'ADD_CONVERSATION', conversation })
-    }, 1200 + Math.random() * 800)
+    }, 1200 + randomDelay)
   }
 
   const reset = () => {
