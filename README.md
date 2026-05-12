@@ -1,20 +1,19 @@
 # Aira Studio
 
-Aira Studio is a no-code AI agent builder. It lets a user configure an agent persona, upload PDF/TXT/manual FAQ knowledge, test a local RAG-style chat flow, use browser voice input/output, publish a share preview, and inspect analytics.
+Aira Studio is a no-code AI agent builder. Configure an agent persona, upload PDF/TXT/manual FAQ knowledge, test a RAG-style chat flow, use browser voice input/output, publish a share preview, and inspect analytics.
 
 ## Run Locally
 
-This first version is dependency-free and can run as static files.
-
 ```bash
-python3 -m http.server 4173
+npm install
+npm run dev
 ```
 
-Open `http://localhost:4173`.
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Free-Tier Production Stack
 
-- Frontend: Vercel static hosting or Next.js free tier
+- Frontend: Next.js on Vercel free tier
 - Auth: No sign-in required for the current prototype
 - Database: Supabase Postgres free tier
 - Vector search: Supabase pgvector
@@ -36,7 +35,7 @@ GEMINI_API_KEY=...
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
-Groq is used first. If Groq fails or is not configured, the API tries Gemini. If neither provider is available, the browser keeps using the local demo retrieval answer.
+Groq is used first. If Groq fails or is not configured, the API tries Gemini. If neither is available, the browser uses local demo retrieval.
 
 ## App Flow
 
@@ -48,24 +47,23 @@ Groq is used first. If Groq fails or is not configured, the API tries Gemini. If
 6. Publish a public URL and embeddable widget snippet.
 7. Review analytics for conversations, confidence, unknown questions, and voice usage.
 
+## Tech Stack (v2)
+
+- **Next.js 16** — App Router, TypeScript
+- **Tailwind CSS v4** — utility-first styling
+- **framer-motion** — animated transitions and micro-interactions
+- **shadcn/ui** — component primitives (Button, utils)
+- **UI UX Pro Max** — Claude Code skill for design guidance
+- **Lucide React** — icons
+
 ## Supabase Setup
 
 1. Create a free Supabase project.
 2. Run `supabase/schema.sql` in the SQL editor.
 3. Create a private storage bucket named `agent-knowledge`.
-4. Add an Edge Function for ingestion:
-   - Store uploaded file in Supabase Storage.
-   - Extract text from PDF/TXT.
-   - Chunk text into 700-900 character chunks.
-   - Generate embeddings with Gemini `text-embedding-004` or another free embedding endpoint.
-   - Insert chunks into `knowledge_chunks`.
-5. Add an Edge Function for chat:
-   - Embed the user query.
-   - Search `knowledge_chunks` by cosine distance.
-   - Build the system prompt from the agent settings.
-   - Call Gemini/OpenAI.
-   - Save `conversations` and `analytics_events`.
+4. Add an Edge Function for ingestion (store → extract → chunk → embed → pgvector).
+5. Add an Edge Function for chat (embed query → vector search → LLM → save analytics).
 
 ## Current MVP Notes
 
-The included app uses localStorage and a lightweight in-browser retrieval simulation so the product flow works immediately. PDF extraction attempts to use PDF.js from a CDN; TXT and manual FAQ input work locally. The schema and README show where the production Supabase and LLM services attach. Google sign-in is intentionally not part of the current product direction.
+The app uses localStorage and in-browser retrieval simulation so the product flow works immediately. PDF extraction uses PDF.js from CDN; TXT and manual FAQ input work locally. The schema and README show where production Supabase and LLM services attach.
