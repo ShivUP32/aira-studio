@@ -1,7 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
 import { LayoutDashboard, Bot, MessageCircle, Send, BarChart3, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const navItems = [
   { route: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
@@ -18,53 +17,73 @@ interface SidebarProps {
 
 export function Sidebar({ activeRoute, onNavigate }: SidebarProps) {
   return (
-    <aside className="w-56 shrink-0 flex flex-col border-r border-border bg-[hsl(var(--sidebar))] h-screen sticky top-0">
-      <div className="p-4 border-b border-border">
+    <aside className="w-56 shrink-0 flex flex-col bg-[#050C1A] border-r border-[#162135] h-screen sticky top-0">
+      {/* Brand Section */}
+      <div className="p-4 border-b border-[#162135]">
         <button
           onClick={() => onNavigate("dashboard")}
-          className="flex items-center gap-3 group"
+          className="flex items-center gap-3 group w-full hover:opacity-90 transition-opacity"
         >
-          <div className="w-8 h-8 rounded-lg bg-foreground text-background flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center font-bold text-sm text-black flex-shrink-0 group-hover:scale-105 transition-transform">
             <Sparkles className="w-4 h-4" />
           </div>
           <div className="text-left">
-            <div className="font-semibold text-sm leading-tight">Aira Studio</div>
-            <div className="text-xs text-muted-foreground leading-tight">Agent Builder</div>
+            <div className="font-bold text-sm text-slate-100 leading-tight">Aira Studio</div>
+            <div className="text-xs text-slate-500 leading-tight">Agent Builder</div>
           </div>
         </button>
       </div>
 
+      {/* Navigation Items */}
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto scrollbar-thin">
         {navItems.map(({ route, label, Icon }) => {
           const isActive = activeRoute === route;
           return (
-            <button
-              key={route}
-              onClick={() => onNavigate(route)}
-              className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 text-left relative",
-                isActive
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
-              )}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="active-nav"
-                  className="absolute inset-0 bg-background rounded-lg border border-border shadow-sm"
-                  transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
-                />
-              )}
-              <Icon className="w-4 h-4 relative z-10 shrink-0" />
-              <span className="relative z-10">{label}</span>
-            </button>
+            <div key={route} className="relative">
+              <button
+                onClick={() => onNavigate(route)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium transition-colors duration-150 text-left relative z-10"
+                style={{
+                  color: isActive ? "#10B981" : "#64748B",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.color = "#cbd5e1";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.color = "#64748B";
+                }}
+              >
+                {isActive && (
+                  <>
+                    <motion.div
+                      layoutId="nav-indicator"
+                      className="absolute inset-0 bg-emerald-500/8 border border-emerald-500/15 rounded-lg"
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+                    />
+                    <div className="absolute left-0 w-0.5 h-4 bg-emerald-500 rounded-full" />
+                  </>
+                )}
+                <Icon className="w-4 h-4 relative z-10 shrink-0" />
+                <span className="relative z-10">{label}</span>
+              </button>
+            </div>
           );
         })}
       </nav>
 
-      <div className="p-3 border-t border-border">
-        <div className="text-[10px] text-muted-foreground/60 text-center">
-          Free-tier ready · Powered by Groq + Gemini
+      {/* Footer Status */}
+      <div className="p-4 border-t border-[#162135] space-y-3">
+        <div className="flex items-center gap-2 text-sm">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-slate-400 text-xs">Free tier ready</span>
+        </div>
+        <div className="flex gap-2">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#091323] border border-[#162135] text-[10px] text-slate-400">
+            Groq
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#091323] border border-[#162135] text-[10px] text-slate-400">
+            Gemini
+          </span>
         </div>
       </div>
     </aside>

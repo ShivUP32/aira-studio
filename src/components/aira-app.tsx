@@ -55,40 +55,52 @@ export function AiraApp() {
   if (!mounted) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[#050C1A]">
       <Sidebar activeRoute={route} onNavigate={navigate} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Radial glow background */}
+        <div
+          className="pointer-events-none fixed inset-0 z-0"
+          style={{
+            background: "radial-gradient(ellipse 60% 30% at 50% 0%, rgba(16,185,129,0.06) 0%, transparent 70%)",
+          }}
+        />
+
         {/* Topbar */}
-        <header className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-border bg-card">
+        <header className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-[#162135] bg-[#050C1A]/80 backdrop-blur-sm sticky top-0 z-10 relative">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">AI agent workspace</p>
-            <h1 className="text-xl font-bold tracking-tight">{ROUTE_TITLES[route]}</h1>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">AI agent workspace</p>
+            <h1 className="text-xl font-bold text-slate-100">{ROUTE_TITLES[route]}</h1>
           </div>
           <div className="flex items-center gap-3">
             <select
               value={state.activeAgentId}
               onChange={(e) => handleStateChange({ ...state, activeAgentId: e.target.value })}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring max-w-48"
+              className="h-9 rounded-lg bg-[#091323] border border-[#162135] text-slate-300 px-3 text-sm focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 max-w-48 transition-colors"
             >
               {state.agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
-            <Button onClick={newAgent} size="sm" className="gap-1.5">
+            <Button
+              onClick={newAgent}
+              size="sm"
+              className="gap-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600 text-black font-semibold hover:from-emerald-300 hover:to-emerald-500"
+            >
               <Plus className="w-4 h-4" /> New Agent
             </Button>
           </div>
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto scrollbar-thin">
+        <main className="flex-1 overflow-y-auto scrollbar-thin relative z-10">
           <div className="p-6 max-w-[1400px] mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={route}
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.2 }}
               >
                 {route === "dashboard" && <Dashboard state={state} onNavigate={navigate} onNewAgent={newAgent} />}
                 {route === "builder" && <Builder state={state} onStateChange={handleStateChange} onNavigate={navigate} onReset={reset} />}
