@@ -13,17 +13,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} style={{ backgroundImage: "url('/bg-main.svg')", backgroundSize: "cover", backgroundAttachment: "fixed", colorScheme: "dark", forcedColorAdjust: "none" } as React.CSSProperties}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} style={{ colorScheme: "dark", forcedColorAdjust: "none", backgroundColor: "#050C1A" } as React.CSSProperties}>
       <head>
         <meta name="color-scheme" content="dark" />
-        {/* SVG url() backgrounds survive ALL browser forced-colors implementations.
-            background-image: url() is spec-preserved; background-color is not. */}
         <style dangerouslySetInnerHTML={{ __html: `
           html, body {
-            background-image: url('/bg-main.svg') !important;
-            background-size: cover !important;
-            background-repeat: no-repeat !important;
-            background-attachment: fixed !important;
+            background-color: #050C1A !important;
             color: #EFF4F8 !important;
             forced-color-adjust: none !important;
             -webkit-forced-color-adjust: none !important;
@@ -32,25 +27,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             forced-color-adjust: none !important;
             -webkit-forced-color-adjust: none !important;
           }
-          .bg-aira-bg,
-          .bg-aira-bg\\/80,
-          .bg-aira-bg\\/60,
-          .bg-aira-bg\\/50,
-          .bg-aira-bg\\/40,
-          .bg-aira-bg\\/30 {
-            background-image: url('/bg-main.svg') !important;
-            background-size: cover !important;
-            background-position: center top !important;
-            background-attachment: fixed !important;
+          #aira-bg-img {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 0;
+            pointer-events: none;
+            display: block;
           }
-          .bg-aira-card,
-          .bg-aira-card\\/40 {
-            background-image: url('/bg-card.svg') !important;
-            background-size: cover !important;
+          #aira-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
           }
         ` }} />
       </head>
-      <body className="min-h-full flex flex-col bg-aira-bg text-foreground" style={{ backgroundImage: "url('/bg-main.svg')", backgroundSize: "cover", backgroundAttachment: "fixed", color: "#EFF4F8", forcedColorAdjust: "none" } as React.CSSProperties}>{children}</body>
+      <body className="min-h-full flex flex-col text-foreground" style={{ backgroundColor: "#050C1A", color: "#EFF4F8", forcedColorAdjust: "none" } as React.CSSProperties}>
+        {/* DOM-rendered background image: pixel content is immune to ALL browser color-override modes */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img id="aira-bg-img" src="/bg-main.svg" alt="" aria-hidden="true" />
+        <div id="aira-content">
+          {children}
+        </div>
+      </body>
     </html>
   );
 }
