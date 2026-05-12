@@ -1,6 +1,16 @@
 @import "tailwindcss";
-@source "../../src/**/*.{tsx,ts,jsx,js}";
-@source "../../app/**/*.{tsx,ts,jsx,js}";
+
+@theme {
+  --color-aira-bg: #050C1A;
+  --color-aira-card: #091323;
+  --color-aira-elevated: #0A1A2E;
+  --color-aira-surface: #0E1E35;
+  --color-aira-line: #162135;
+  --color-aira-forest: #064E3B;
+  --color-aira-forest-light: #065F46;
+}
+
+@source inline("text-[10px] text-[11px] ring-offset-aira-bg bg-[radial-gradient(ellipse_80%_50%_at_20%_50%,rgba(16,185,129,0.08)_0%,transparent_70%)] border-[rgba(16,185,129,0.15)] border-[rgba(16,185,129,0.2)] shadow-[0_0_16px_rgba(16,185,129,0.08)] shadow-[0_0_24px_rgba(16,185,129,0.07)] shadow-[0_0_24px_rgba(16,185,129,0.08)] shadow-[0_0_40px_rgba(16,185,129,0.08),0_8px_32px_rgba(0,0,0,0.4)] shadow-[0_1px_2px_rgba(0,0,0,0.5),0_0_0_1px_rgba(16,185,129,0.3)] shadow-[0_1px_2px_rgba(0,0,0,0.5)] shadow-[0_1px_3px_rgba(0,0,0,0.4),0_8px_24px_rgba(0,0,0,0.3)] shadow-[0_4px_12px_rgba(16,185,129,0.35)]");
 
 :root {
   /* Use HSL values for all tokens */

@@ -112,9 +112,9 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
 
   return (
     <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-      <div className="bg-[#091323] border border-[#162135] rounded-xl overflow-hidden flex flex-col">
+      <div className="bg-aira-card border border-aira-line rounded-xl overflow-hidden flex flex-col">
         {/* Progress bar */}
-        <div className="flex border-b border-[#162135] bg-[#050C1A]/50">
+        <div className="flex border-b border-aira-line bg-aira-bg/50">
           {STEPS.map((label, i) => {
             const n = i + 1;
             const active = step === n;
@@ -168,7 +168,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                           "flex flex-col gap-1.5 p-3.5 rounded-xl border cursor-pointer transition-all text-left",
                           draftAgent.templateId === tpl.id
                             ? "bg-emerald-500/8 border-emerald-500/40 shadow-[0_0_16px_rgba(16,185,129,0.08)]"
-                            : "bg-[#050C1A] border-[#162135] hover:border-emerald-500/25 hover:bg-emerald-500/4"
+                            : "bg-aira-bg border-aira-line hover:border-emerald-500/25 hover:bg-emerald-500/4"
                         )}
                       >
                         <span className="text-xs font-semibold text-slate-200">{tpl.name}</span>
@@ -194,7 +194,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                           <select
                             value={(form as Record<string, string>)[key]}
                             onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                            className="h-9 w-full bg-[#091323] border border-[#162135] rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            className="h-9 w-full bg-aira-card border border-aira-line rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                           >
                             {options!.map((o) => (
                               <option key={o}>{o}</option>
@@ -205,7 +205,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                             value={(form as Record<string, string>)[key]}
                             onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                             placeholder={placeholder}
-                            className="h-9 w-full bg-[#091323] border border-[#162135] rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            className="h-9 w-full bg-aira-card border border-aira-line rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                           />
                         )}
                       </label>
@@ -223,7 +223,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                           onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                           placeholder={placeholder}
                           rows={key === "goal" || key === "description" ? 3 : 2}
-                          className="w-full bg-[#091323] border border-[#162135] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+                          className="w-full bg-aira-card border border-aira-line rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
                         />
                       </label>
                     ))}
@@ -244,7 +244,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                       e.preventDefault();
                       handleFiles(e.dataTransfer.files);
                     }}
-                    className="border-2 border-dashed border-[#162135] hover:border-emerald-500/40 bg-[#050C1A]/50 rounded-xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
+                    className="border-2 border-dashed border-aira-line hover:border-emerald-500/40 bg-aira-bg/50 rounded-xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
                   >
                     <UploadCloud className="w-8 h-8 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                     <div className="text-center">
@@ -262,7 +262,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                         key={item.id}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 p-3 bg-[#050C1A] border border-[#162135] rounded-lg"
+                        className="flex items-center gap-3 p-3 bg-aira-bg border border-aira-line rounded-lg"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-slate-200 truncate">{item.title}</div>
@@ -291,7 +291,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                     onChange={(e) => setForm((f) => ({ ...f, manualFaq: e.target.value }))}
                     rows={6}
                     placeholder={"Q: What is the refund policy?\nA: Refunds are available within 14 days..."}
-                    className="w-full bg-[#091323] border border-[#162135] rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+                    className="w-full bg-aira-card border border-aira-line rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
                   />
                 </label>
               </div>
@@ -304,8 +304,8 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                   <p className="text-sm text-slate-400 mb-4">Check readiness before saving and testing.</p>
                 </div>
 
-                <div className="bg-[#091323] border border-[#162135] rounded-xl overflow-hidden">
-                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#162135] bg-emerald-500/5">
+                <div className="bg-aira-card border border-aira-line rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-aira-line bg-emerald-500/5">
                     <strong className="text-sm text-slate-200">{readiness.every((r) => r.done) ? "Agent ready" : "Agent readiness"}</strong>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
                       {readiness.filter((r) => r.done).length}/{readiness.length}
@@ -315,7 +315,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
                     <div
                       key={check.label}
                       className={cn(
-                        "flex items-start gap-3 px-5 py-3.5 border-b border-[#162135] last:border-0",
+                        "flex items-start gap-3 px-5 py-3.5 border-b border-aira-line last:border-0",
                         check.done ? "bg-emerald-500/5" : ""
                       )}
                     >
@@ -337,7 +337,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
         </AnimatePresence>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 p-4 border-t border-[#162135] bg-[#050C1A]/50">
+        <div className="flex items-center gap-2 p-4 border-t border-aira-line bg-aira-bg/50">
           <Button variant="ghost" size="sm" onClick={onReset} className="gap-1.5 text-xs mr-auto text-slate-400 hover:text-slate-200">
             <RotateCcw className="w-3.5 h-3.5" /> Reset Demo
           </Button>
@@ -363,9 +363,9 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
       </div>
 
       {/* Right panel — System Prompt Preview */}
-      <div className="bg-[#091323] border border-[#162135] rounded-xl overflow-hidden flex flex-col h-fit sticky top-4">
+      <div className="bg-aira-card border border-aira-line rounded-xl overflow-hidden flex flex-col h-fit sticky top-4">
         <div className="h-0.5 bg-gradient-to-r from-emerald-500/0 via-emerald-500/60 to-emerald-500/0" />
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#162135]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-aira-line">
           <h3 className="font-semibold text-sm text-slate-100">System Prompt</h3>
           <button
             onClick={copyPrompt}
@@ -384,7 +384,7 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
             )}
           </button>
         </div>
-        <div className="flex gap-1.5 px-4 py-2 border-b border-[#162135]">
+        <div className="flex gap-1.5 px-4 py-2 border-b border-aira-line">
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-slate-500 font-medium">Auto-generated</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-slate-500 font-medium">Universal guidelines</span>
         </div>

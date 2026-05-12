@@ -9,7 +9,7 @@ export function Card({ className, glow = false, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "bg-[#091323] border border-[#162135] rounded-xl",
+        "bg-aira-card border border-aira-line rounded-xl",
         "shadow-[0_1px_3px_rgba(0,0,0,0.4),0_8px_24px_rgba(0,0,0,0.3)]",
         glow &&
           "hover:border-[rgba(16,185,129,0.2)] hover:shadow-[0_0_24px_rgba(16,185,129,0.08)] transition-all duration-300",
@@ -27,7 +27,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between px-5 py-3.5 border-b border-[#162135]",
+        "flex items-center justify-between px-5 py-3.5 border-b border-aira-line",
         className
       )}
       {...props}

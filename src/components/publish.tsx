@@ -46,8 +46,8 @@ export function Publish({ state, onStateChange }: PublishProps) {
       <div className="space-y-4">
         {/* Publish controls card */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="bg-[#091323] border-[#162135] overflow-hidden">
-            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+          <Card className="bg-aira-card border-aira-line overflow-hidden">
+            <CardHeader className="border-b border-aira-line bg-aira-bg/40 pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-100">Publish Agent</CardTitle>
                 <Badge variant={agent.published ? "live" : allReady ? "default" : "draft"}>
@@ -57,7 +57,7 @@ export function Publish({ state, onStateChange }: PublishProps) {
             </CardHeader>
             <CardContent className="p-0">
               {/* Readiness checklist */}
-              <div className="divide-y divide-[#162135]">
+              <div className="divide-y divide-aira-line">
                 {readiness.map((check) => (
                   <div key={check.label} className={cn("flex items-start gap-3 px-5 py-3.5", check.done && "bg-emerald-500/5")}>
                     {check.done ? (
@@ -74,7 +74,7 @@ export function Publish({ state, onStateChange }: PublishProps) {
               </div>
 
               {/* Toggle rows */}
-              <div className="divide-y divide-[#162135] border-t border-[#162135]">
+              <div className="divide-y divide-aira-line border-t border-aira-line">
                 {[
                   { key: "published", label: "Public share URL", disabled: !allReady },
                   { key: "embedEnabled", label: "Embeddable widget", disabled: false },
@@ -104,18 +104,18 @@ export function Publish({ state, onStateChange }: PublishProps) {
 
         {/* Share URL card */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="bg-[#091323] border-[#162135] overflow-hidden">
-            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+          <Card className="bg-aira-card border-aira-line overflow-hidden">
+            <CardHeader className="border-b border-aira-line bg-aira-bg/40 pb-3">
               <CardTitle className="text-slate-100">Share URL</CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               <div className="flex gap-2">
-                <input readOnly value={shareUrl} className="flex-1 h-9 bg-[#050C1A] border border-[#162135] rounded-lg px-3 text-xs text-slate-400 truncate" />
-                <button onClick={copyUrl} className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#162135] hover:border-emerald-500/30 hover:bg-emerald-500/5 text-slate-400 hover:text-emerald-400 transition-all text-sm">
+                <input readOnly value={shareUrl} className="flex-1 h-9 bg-aira-bg border border-aira-line rounded-lg px-3 text-xs text-slate-400 truncate" />
+                <button onClick={copyUrl} className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-aira-line hover:border-emerald-500/30 hover:bg-emerald-500/5 text-slate-400 hover:text-emerald-400 transition-all text-sm">
                   {copiedUrl ? <><Check className="w-3.5 h-3.5" /></> : <><Copy className="w-3.5 h-3.5" /></>}
                 </button>
               </div>
-              <pre className="text-[11px] text-slate-500 bg-[#050C1A] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-mono border border-[#162135]">{embedCode}</pre>
+              <pre className="text-[11px] text-slate-500 bg-aira-bg rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-mono border border-aira-line">{embedCode}</pre>
             </CardContent>
           </Card>
         </motion.div>
@@ -123,8 +123,8 @@ export function Publish({ state, onStateChange }: PublishProps) {
 
       {/* Widget preview */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex flex-col items-center justify-center">
-        <div className="w-72 bg-[#091323] border border-[#162135] rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.08),0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
-          <div className="bg-gradient-to-r from-[#064E3B] to-[#065F46] px-4 py-3.5 flex items-center gap-3">
+        <div className="w-72 bg-aira-card border border-aira-line rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.08),0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
+          <div className="bg-gradient-to-r from-aira-forest to-aira-forest-light px-4 py-3.5 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm">
               {agent.name.charAt(0).toUpperCase()}
             </div>

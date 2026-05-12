@@ -17,9 +17,9 @@ interface SidebarProps {
 
 export function Sidebar({ activeRoute, onNavigate }: SidebarProps) {
   return (
-    <aside className="w-56 shrink-0 flex flex-col bg-[#050C1A] border-r border-[#162135] h-screen sticky top-0">
+    <aside className="w-56 shrink-0 flex flex-col bg-aira-bg border-r border-aira-line h-screen sticky top-0">
       {/* Brand Section */}
-      <div className="p-4 border-b border-[#162135]">
+      <div className="p-4 border-b border-aira-line">
         <button
           onClick={() => onNavigate("dashboard")}
           className="flex items-center gap-3 group w-full hover:opacity-90 transition-opacity"
@@ -72,16 +72,16 @@ export function Sidebar({ activeRoute, onNavigate }: SidebarProps) {
       </nav>
 
       {/* Footer Status */}
-      <div className="p-4 border-t border-[#162135] space-y-3">
+      <div className="p-4 border-t border-aira-line space-y-3">
         <div className="flex items-center gap-2 text-sm">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-slate-400 text-xs">Free tier ready</span>
         </div>
         <div className="flex gap-2">
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#091323] border border-[#162135] text-[10px] text-slate-400">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-aira-card border border-aira-line text-[10px] text-slate-400">
             Groq
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#091323] border border-[#162135] text-[10px] text-slate-400">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-aira-card border border-aira-line text-[10px] text-slate-400">
             Gemini
           </span>
         </div>

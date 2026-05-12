@@ -55,7 +55,7 @@ export function AiraApp() {
   if (!mounted) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#050C1A]">
+    <div className="flex h-screen overflow-hidden bg-aira-bg">
       <Sidebar activeRoute={route} onNavigate={navigate} />
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -68,7 +68,7 @@ export function AiraApp() {
         />
 
         {/* Topbar */}
-        <header className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-[#162135] bg-[#050C1A]/80 backdrop-blur-sm sticky top-0 z-10 relative">
+        <header className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-aira-line bg-aira-bg/80 backdrop-blur-sm sticky top-0 z-10 relative">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">AI agent workspace</p>
             <h1 className="text-xl font-bold text-slate-100">{ROUTE_TITLES[route]}</h1>
@@ -77,7 +77,7 @@ export function AiraApp() {
             <select
               value={state.activeAgentId}
               onChange={(e) => handleStateChange({ ...state, activeAgentId: e.target.value })}
-              className="h-9 rounded-lg bg-[#091323] border border-[#162135] text-slate-300 px-3 text-sm focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 max-w-48 transition-colors"
+              className="h-9 rounded-lg bg-aira-card border border-aira-line text-slate-300 px-3 text-sm focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 max-w-48 transition-colors"
             >
               {state.agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>

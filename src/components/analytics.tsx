@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 function MetricCard({ label, value, hint, delay }: { label: string; value: string | number; hint: string; delay?: number }) {
   return (
     <motion.article initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: delay || 0 }}
-      className="bg-[#091323] border border-[#162135] rounded-xl p-5 hover:border-[rgba(16,185,129,0.15)] transition-all">
+      className="bg-aira-card border border-aira-line rounded-xl p-5 hover:border-[rgba(16,185,129,0.15)] transition-all">
       <span className="text-xs text-slate-500 font-medium">{label}</span>
       <strong className="text-2xl font-bold text-slate-100 mt-1.5 tabular-nums">{value}</strong>
       <small className="text-xs text-slate-600 mt-0.5 block">{hint}</small>
@@ -55,8 +55,8 @@ export function Analytics({ state }: AnalyticsProps) {
       <div className="grid md:grid-cols-2 gap-4">
         {/* Confidence distribution card */}
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
-            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+          <Card className="bg-aira-card border-aira-line overflow-hidden h-full">
+            <CardHeader className="border-b border-aira-line bg-aira-bg/40 pb-3">
               <CardTitle className="text-slate-100">Confidence Distribution</CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
@@ -80,12 +80,12 @@ export function Analytics({ state }: AnalyticsProps) {
 
         {/* Unknown questions card */}
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
-            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+          <Card className="bg-aira-card border-aira-line overflow-hidden h-full">
+            <CardHeader className="border-b border-aira-line bg-aira-bg/40 pb-3">
               <CardTitle className="text-slate-100">Unknown Questions</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-[#162135]">
+              <div className="divide-y divide-aira-line">
                 {unknowns.length ? unknowns.map((c, i) => (
                   <div key={i} className="px-4 py-2.5 text-sm text-slate-400">{c.question}</div>
                 )) : <div className="px-4 py-4 text-xs text-slate-600">No unknown questions yet.</div>}
@@ -98,12 +98,12 @@ export function Analytics({ state }: AnalyticsProps) {
       <div className="grid md:grid-cols-2 gap-4">
         {/* Failed intents card */}
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
-            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+          <Card className="bg-aira-card border-aira-line overflow-hidden h-full">
+            <CardHeader className="border-b border-aira-line bg-aira-bg/40 pb-3">
               <CardTitle className="text-slate-100">Top Failed Intents</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-[#162135]">
+              <div className="divide-y divide-aira-line">
                 {failed.length ? failed.map((c, i) => (
                   <div key={i} className="px-4 py-2.5 text-sm text-slate-400 truncate">{c.question}</div>
                 )) : <div className="px-4 py-4 text-xs text-slate-600">No failed intents yet.</div>}
@@ -114,12 +114,12 @@ export function Analytics({ state }: AnalyticsProps) {
 
         {/* Improvement suggestions card */}
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <Card className="bg-[#091323] border-[#162135] overflow-hidden h-full">
-            <CardHeader className="border-b border-[#162135] bg-[#050C1A]/40 pb-3">
+          <Card className="bg-aira-card border-aira-line overflow-hidden h-full">
+            <CardHeader className="border-b border-aira-line bg-aira-bg/40 pb-3">
               <CardTitle className="text-slate-100">Improvement Suggestions</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-[#162135]">
+              <div className="divide-y divide-aira-line">
                 {conversations.some((c) => c.confidence < 45) ? (
                   ["Add low-confidence questions as Manual FAQ entries.", "Upload clearer source documents for repeated unknowns.", "Retest failed answers before publishing."].map((s, i) => (
                     <div key={i} className="px-4 py-2.5 text-sm text-slate-400 flex items-start gap-3">

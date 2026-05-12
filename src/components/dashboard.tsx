@@ -16,7 +16,7 @@ function MetricCard({ label, value, hint, delay = 0 }: { label: string; value: s
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      className="bg-[#091323] border border-[#162135] rounded-xl p-4 flex flex-col gap-1 hover:border-[rgba(16,185,129,0.15)] hover:shadow-[0_0_24px_rgba(16,185,129,0.07)] transition-all duration-300"
+      className="bg-aira-card border border-aira-line rounded-xl p-4 flex flex-col gap-1 hover:border-[rgba(16,185,129,0.15)] hover:shadow-[0_0_24px_rgba(16,185,129,0.07)] transition-all duration-300"
     >
       <span className="text-xs text-slate-500 font-medium">{label}</span>
       <strong className="text-2xl font-bold text-slate-100 tracking-tight">{value}</strong>
@@ -55,7 +55,7 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#091323] via-[#0A1A2E] to-[#091323] border border-[#162135] p-6 md:p-8"
+        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-aira-card via-aira-elevated to-aira-card border border-aira-line p-6 md:p-8"
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_20%_50%,rgba(16,185,129,0.08)_0%,transparent_70%)] pointer-events-none" />
 
@@ -106,9 +106,9 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
 
           {/* Right side: Agent console mockup */}
           <div className="shrink-0 w-full md:w-72">
-            <div className="bg-[#050C1A] border border-[#162135] rounded-xl overflow-hidden shadow-xl">
+            <div className="bg-aira-bg border border-aira-line rounded-xl overflow-hidden shadow-xl">
               {/* Top bar with dots */}
-              <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-[#162135] bg-[#050C1A]/60">
+              <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-aira-line bg-aira-bg/60">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
                 <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
@@ -116,15 +116,15 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
               </div>
 
               {/* Prompt text */}
-              <div className="p-3 text-xs text-slate-500 bg-[#050C1A]/60 border-b border-[#162135] italic">
+              <div className="p-3 text-xs text-slate-500 bg-aira-bg/60 border-b border-aira-line italic">
                 Build an agent that reads my PDF, answers with sources, and speaks while the transcript appears.
               </div>
 
               {/* Pipeline steps */}
-              <div className="grid grid-cols-4 gap-1 p-3 border-b border-[#162135]">
+              <div className="grid grid-cols-4 gap-1 p-3 border-b border-aira-line">
                 {[{icon: FileText, label:"Upload"},{icon:Scissors,label:"Chunk"},{icon:Database,label:"Store"},{icon:Bot,label:"Speak"}].map(({icon:Icon,label}) => (
                   <div key={label} className="flex flex-col items-center gap-1 text-[10px] text-slate-500">
-                    <div className="w-7 h-7 rounded-lg bg-[#091323] flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg bg-aira-card flex items-center justify-center">
                       <Icon className="w-3.5 h-3.5" />
                     </div>
                     {label}
@@ -133,7 +133,7 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
               </div>
 
               {/* Confidence row */}
-              <div className="flex items-center justify-between px-3 py-2 text-xs border-b border-[#162135]">
+              <div className="flex items-center justify-between px-3 py-2 text-xs border-b border-aira-line">
                 <span className="text-slate-500">Confidence</span>
                 <strong className="text-slate-200">87%</strong>
                 <span className="text-slate-500 ml-2">Sources</span>
@@ -167,7 +167,7 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="bg-[#091323] border-[#162135]">
+          <Card className="bg-aira-card border-aira-line">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <CardTitle className="text-sm font-semibold text-slate-100">Agents</CardTitle>
               <Button
@@ -179,7 +179,7 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
                 <Plus className="w-3.5 h-3.5" /> Create
               </Button>
             </CardHeader>
-            <CardContent className="p-0 divide-y divide-[#162135]">
+            <CardContent className="p-0 divide-y divide-aira-line">
               {state.agents.map((a, idx) => (
                 <motion.button
                   key={a.id}
@@ -208,7 +208,7 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.28 }}
         >
-          <Card className="bg-[#091323] border-[#162135]">
+          <Card className="bg-aira-card border-aira-line">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <CardTitle className="text-sm font-semibold text-slate-100">Service Stack</CardTitle>
               <Badge variant="green">Free tier ready</Badge>
@@ -234,7 +234,7 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.36 }}
         >
-          <Card className="bg-[#091323] border-[#162135]">
+          <Card className="bg-aira-card border-aira-line">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <CardTitle className="text-sm font-semibold text-slate-100">Aira Studio vs Custom GPTs</CardTitle>
               <Badge variant="green">Why Aira</Badge>
@@ -262,7 +262,7 @@ export function Dashboard({ state, onNavigate, onNewAgent }: DashboardProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.44 }}
         >
-          <Card className="bg-[#091323] border-[#162135]">
+          <Card className="bg-aira-card border-aira-line">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <CardTitle className="text-sm font-semibold text-slate-100">Best Demo Flow</CardTitle>
               <Badge variant="green">Support agent</Badge>
