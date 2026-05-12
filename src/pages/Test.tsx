@@ -13,6 +13,24 @@ function makeId() {
   return Math.random().toString(36).slice(2, 10)
 }
 
+const QUICK_ACTION_RESPONSES: Record<string, { content: string; confidence: number; sources: string[] }> = {
+  'Upload readiness': {
+    content: "## Upload Readiness Checklist\n\nYour knowledge base is ready for upload when the following criteria are met:\n\n- **File format** — PDF, TXT, Markdown, or DOCX only\n- **File size** — Maximum 10 MB per file\n- **Content quality** — Text must be extractable (no scanned images)\n- **Language** — English recommended for best embedding quality\n\nOnce uploaded, files are automatically **chunked into 512-token segments** and stored in the vector database.",
+    confidence: 0.94,
+    sources: ['Upload Readiness Guide', 'File Format Reference'],
+  },
+  'Source-backed answer': {
+    content: "## Source-Backed Answer Example\n\nWhen your agent retrieves a high-confidence answer, it will:\n\n- **Cite sources** — show the knowledge chunks that backed the response\n- **Display confidence score** — percentage shown in the sidebar\n- **Highlight key terms** — relevant terms from the source are emphasized\n\nA source-backed answer requires a confidence score **above 80%**. Below that threshold, the agent adds a disclaimer or triggers the fallback response.",
+    confidence: 0.89,
+    sources: ['Agent Response Guide', 'Aira Studio PRD Summary'],
+  },
+  'Fallback behavior': {
+    content: "## Fallback Behavior\n\nWhen the agent cannot find a confident answer, it activates the fallback flow:\n\n- **Confidence below 50%** — fallback message is shown instead of a low-quality answer\n- **Default fallback** — \"I don't have enough information to answer that confidently. Please contact support.\"\n- **Custom fallback** — you can set a custom fallback message in the Builder under Agent Settings\n\nFallback responses are **never source-cited** and are clearly marked to avoid misleading users.",
+    confidence: 0.92,
+    sources: ['Fallback Configuration Guide'],
+  },
+}
+
 const MOCK_RESPONSES: { content: string; confidence: number; sources: string[] }[] = [
   {
     content: "## Supported File Formats\n\nAira Studio supports the following formats for knowledge base ingestion:\n\n- **PDF** — most common for documentation and manuals\n- **TXT** — plain text files\n- **Markdown (.md)** — ideal for structured docs\n- **DOCX** — Word documents\n\nFiles are automatically **chunked** and stored in the vector database for semantic retrieval.",
@@ -78,23 +96,8 @@ function MarkdownText({ content }: { content: string }) {
   )
 }
 
-function StreamingText({ content, streamingId, msgId }: { content: string; streamingId: string | null; msgId: string }) {
-  const [displayed, setDisplayed] = useState(streamingId === msgId ? '' : content)
-
-  useEffect(() => {
-    if (streamingId !== msgId) { setDisplayed(content); return }
-    setDisplayed('')
-    const words = content.split(' ')
-    let i = 0
-    const interval = setInterval(() => {
-      i++
-      setDisplayed(words.slice(0, i).join(' '))
-      if (i >= words.length) clearInterval(interval)
-    }, 90)
-    return () => clearInterval(interval)
-  }, [content, streamingId, msgId])
-
-  return <MarkdownText content={displayed} />
+function StreamingText({ content, isStreaming, streamingContent }: { content: string; isStreaming: boolean; streamingContent: string }) {
+  return <MarkdownText content={isStreaming ? streamingContent : content} />
 }
 
 const containerVariants = {
@@ -120,15 +123,34 @@ export function Test() {
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null)
+  const [streamingContent, setStreamingContent] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const speak = (text: string) => {
-    if (!voiceEnabled || !window.speechSynthesis) return
+    if (!window.speechSynthesis) return
     window.speechSynthesis.cancel()
-    const utt = new SpeechSynthesisUtterance(text)
-    utt.rate = 1.05
-    utt.pitch = 1
-    window.speechSynthesis.speak(utt)
+    if (voiceEnabled) {
+      const utt = new SpeechSynthesisUtterance(text)
+      utt.rate = 1.05
+      utt.onboundary = (e) => {
+        if (e.name === 'word') {
+          setStreamingContent(text.substring(0, e.charIndex + ((e as SpeechSynthesisEvent & { length?: number }).length ?? 1)))
+        }
+      }
+      utt.onend = () => setStreamingContent(text)
+      window.speechSynthesis.speak(utt)
+      setStreamingContent('')
+    } else {
+      // Fallback timer when voice is disabled: 280ms/word
+      setStreamingContent('')
+      const words = text.split(' ')
+      let i = 0
+      const interval = setInterval(() => {
+        i++
+        setStreamingContent(words.slice(0, i).join(' '))
+        if (i >= words.length) clearInterval(interval)
+      }, 280)
+    }
   }
 
   useEffect(() => {
@@ -149,7 +171,7 @@ export function Test() {
     setIsTyping(true)
     setModelStatus('thinking')
 
-    const mockResp = MOCK_RESPONSES[conv.messages.length % MOCK_RESPONSES.length]
+    const mockResp = QUICK_ACTION_RESPONSES[text.trim()] ?? MOCK_RESPONSES[conv.messages.length % MOCK_RESPONSES.length]
     // Compute confidence before the timeout to avoid impure side effects
     const confidenceScore = mockResp.confidence
     const randomDelay = Math.random() * 800
@@ -329,7 +351,7 @@ export function Test() {
                 >
                   {msg.role === 'user'
                     ? msg.content
-                    : <StreamingText content={msg.content} streamingId={streamingMsgId} msgId={msg.id} />
+                    : <StreamingText content={msg.content} isStreaming={msg.id === streamingMsgId} streamingContent={streamingContent} />
                   }
                 </div>
                 {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
