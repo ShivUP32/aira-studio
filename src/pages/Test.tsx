@@ -60,7 +60,7 @@ const itemVariants = {
 }
 
 export function Test() {
-  const { state, dispatch } = useApp()
+  const { state } = useApp()
   const activeAgent = state.agents.find(a => a.id === state.activeAgentId)
   const [conv, setConv] = useState<ActiveConversation>({
     id: makeId(),
@@ -72,7 +72,17 @@ export function Test() {
   const [isTyping, setIsTyping] = useState(false)
   const [modelStatus, setModelStatus] = useState<'waiting' | 'thinking' | 'ready'>('waiting')
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
+  const [voiceEnabled, setVoiceEnabled] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const speak = (text: string) => {
+    if (!voiceEnabled || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utt = new SpeechSynthesisUtterance(text)
+    utt.rate = 1.05
+    utt.pitch = 1
+    window.speechSynthesis.speak(utt)
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -105,16 +115,14 @@ export function Test() {
         confidence: confidenceScore,
         sources: mockResp.sources,
       }
-      // Use ADD_MESSAGE to append single message instead of reconstructing full list
-      dispatch({ type: 'ADD_MESSAGE', conversationId: conv.id, message: userMsg })
-      dispatch({ type: 'ADD_MESSAGE', conversationId: conv.id, message: assistantMsg })
 
       setConv(prev => ({
         ...prev,
-        messages: [...prev.messages, userMsg, assistantMsg],
+        messages: [...prev.messages, assistantMsg],
         lastConfidence: confidenceScore,
         lastSources: mockResp.sources,
       }))
+      speak(mockResp.content)
       setIsTyping(false)
       setModelStatus('ready')
       setFeedback(null)
@@ -177,8 +185,9 @@ export function Test() {
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6, borderRadius: 6 }}
-              title="Voice output"
+              onClick={() => { setVoiceEnabled(v => !v); window.speechSynthesis?.cancel() }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: voiceEnabled ? 'var(--accent)' : 'var(--text-muted)', padding: 6, borderRadius: 6 }}
+              title={voiceEnabled ? 'Voice on — click to mute' : 'Voice off — click to enable'}
             >
               <Volume2 size={15} />
             </button>
