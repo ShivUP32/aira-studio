@@ -176,15 +176,24 @@ export function Test() {
     if (!window.speechSynthesis) return
     window.speechSynthesis.cancel()
     const clean = stripMarkdown(text)
+
     if (voiceEnabled) {
       const utt = new SpeechSynthesisUtterance(clean)
       if (selectedVoiceRef.current) utt.voice = selectedVoiceRef.current
       utt.rate = 1.0
       utt.pitch = 1.0
+
+      const textWords = text.split(' ')
+      const cleanWordCount = clean.split(/\s+/).length
+      let spokenWords = 0
+
       utt.onboundary = (e) => {
-        if (e.name === 'word') {
-          setStreamingContent(text.substring(0, e.charIndex + ((e as SpeechSynthesisEvent & { length?: number }).length ?? 1)))
-        }
+        if (e.name !== 'word') return
+        spokenWords++
+        // Map spoken word position in clean text → proportional position in original markdown
+        const progress = spokenWords / cleanWordCount
+        const targetIdx = Math.min(Math.ceil(progress * textWords.length), textWords.length)
+        setStreamingContent(textWords.slice(0, targetIdx).join(' '))
       }
       utt.onend = () => setStreamingContent(text)
       window.speechSynthesis.speak(utt)
