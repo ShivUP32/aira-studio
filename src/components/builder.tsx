@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UploadCloud, Trash2, ArrowLeft, ArrowRight, Save, RotateCcw, Check, Circle, Copy } from "lucide-react";
+import { UploadCloud, Trash2, ArrowLeft, ArrowRight, Save, RotateCcw, Check, CheckCircle2, Circle, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { AppState, Agent, KnowledgeItem } from "@/lib/agent-state";
 import { agentTemplates, buildPrompt, formatBytes } from "@/lib/agent-state";
 import { chunkText } from "@/lib/retrieval";
@@ -110,18 +111,31 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
   const readiness = getReadiness(draftAgent, state.conversations);
 
   return (
-    <div className="grid lg:grid-cols-[1fr_300px] gap-6">
-      <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col">
-        {/* Progress */}
-        <div className="flex border-b border-border">
+    <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+      <div className="bg-[#091323] border border-[#162135] rounded-xl overflow-hidden flex flex-col">
+        {/* Progress bar */}
+        <div className="flex border-b border-[#162135] bg-[#050C1A]/50">
           {STEPS.map((label, i) => {
             const n = i + 1;
             const active = step === n;
             const done = step > n;
             return (
-              <button key={n} onClick={() => { syncFormToAgent(); setStep(n); }}
-                className={cn("flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2", active ? "border-foreground text-foreground bg-background" : "border-transparent text-muted-foreground hover:text-foreground")}>
-                <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold", active ? "bg-foreground text-background" : done ? "bg-green-500 text-white" : "bg-secondary")}>{done ? <Check className="w-3 h-3" /> : n}</span>
+              <button
+                key={n}
+                onClick={() => {
+                  syncFormToAgent();
+                  setStep(n);
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-medium transition-all cursor-pointer border-b-2",
+                  active ? "border-emerald-500 text-emerald-400 bg-emerald-500/5" : done ? "border-emerald-500/40 text-slate-400" : "border-transparent text-slate-500 hover:text-slate-400"
+                )}
+              >
+                <span
+                  className={cn("w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center", active ? "bg-gradient-to-r from-emerald-400 to-emerald-600 text-black" : done ? "bg-emerald-500 text-white" : "bg-white/8 text-slate-500")}
+                >
+                  {done ? <Check className="w-3 h-3" /> : n}
+                </span>
                 <span className="hidden sm:block">{label}</span>
               </button>
             );
@@ -129,45 +143,88 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
         </div>
 
         <AnimatePresence mode="wait">
-          <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="p-6 flex-1 overflow-y-auto scrollbar-thin space-y-5">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.2 }}
+            className="p-6 flex-1 overflow-y-auto scrollbar-thin space-y-6"
+          >
             {step === 1 && (
               <>
                 <div>
-                  <h3 className="font-semibold mb-1">Choose a Template</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Start simple, then customize the agent persona.</p>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400 mb-3">Choose Template</div>
+                  <p className="text-sm text-slate-400 mb-4">Start simple, then customize the agent persona.</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                     {agentTemplates.map((tpl) => (
-                      <button key={tpl.id} onClick={() => applyTemplate(tpl.id)}
-                        className={cn("flex flex-col gap-1 p-3 rounded-xl border text-left transition-all hover:shadow-sm", draftAgent.templateId === tpl.id ? "border-foreground bg-foreground/5 shadow-sm" : "border-border hover:border-foreground/30")}>
-                        <span className="text-xs font-semibold">{tpl.name}</span>
-                        <span className="text-[10px] text-muted-foreground leading-snug">{tpl.description}</span>
-                      </button>
+                      <motion.button
+                        key={tpl.id}
+                        onClick={() => applyTemplate(tpl.id)}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className={cn(
+                          "flex flex-col gap-1.5 p-3.5 rounded-xl border cursor-pointer transition-all text-left",
+                          draftAgent.templateId === tpl.id
+                            ? "bg-emerald-500/8 border-emerald-500/40 shadow-[0_0_16px_rgba(16,185,129,0.08)]"
+                            : "bg-[#050C1A] border-[#162135] hover:border-emerald-500/25 hover:bg-emerald-500/4"
+                        )}
+                      >
+                        <span className="text-xs font-semibold text-slate-200">{tpl.name}</span>
+                        <span className="text-[10px] text-slate-500 leading-snug">{tpl.description}</span>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Agent Profile</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Name, role, goal, tone, and guardrails.</p>
+
+                <div className="pt-2">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400 mb-3">Agent Profile</div>
+                  <p className="text-sm text-slate-400 mb-4">Name, role, goal, tone, and guardrails.</p>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {[{ key: "name", label: "Agent name", placeholder: "Aira Support Assistant" }, { key: "type", label: "Agent type", type: "select", options: ["Support Agent","Sales Agent","Learning Companion","FAQ Assistant","Personal Assistant"] }, { key: "tone", label: "Persona tone", type: "select", options: ["Friendly and concise","Professional and calm","Warm teacher","Direct sales advisor","Technical expert"] }, { key: "voice", label: "Voice persona", type: "select", options: ["Browser default","Calm guide","Bright helper","Formal assistant"] }].map(({ key, label, placeholder, type, options }) => (
-                      <label key={key} className="flex flex-col gap-1">
-                        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                    {[
+                      { key: "name", label: "Agent name", placeholder: "Aira Support Assistant" },
+                      { key: "type", label: "Agent type", type: "select", options: ["Support Agent", "Sales Agent", "Learning Companion", "FAQ Assistant", "Personal Assistant"] },
+                      { key: "tone", label: "Persona tone", type: "select", options: ["Friendly and concise", "Professional and calm", "Warm teacher", "Direct sales advisor", "Technical expert"] },
+                      { key: "voice", label: "Voice persona", type: "select", options: ["Browser default", "Calm guide", "Bright helper", "Formal assistant"] },
+                    ].map(({ key, label, placeholder, type, options }) => (
+                      <label key={key} className="flex flex-col gap-1.5">
+                        <span className="text-xs font-medium text-slate-400">{label}</span>
                         {type === "select" ? (
-                          <select value={(form as Record<string, string>)[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                            className="h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                            {options!.map((o) => <option key={o}>{o}</option>)}
+                          <select
+                            value={(form as Record<string, string>)[key]}
+                            onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                            className="h-9 w-full bg-[#091323] border border-[#162135] rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                          >
+                            {options!.map((o) => (
+                              <option key={o}>{o}</option>
+                            ))}
                           </select>
                         ) : (
-                          <input value={(form as Record<string, string>)[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
-                            className="h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                          <input
+                            value={(form as Record<string, string>)[key]}
+                            onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                            placeholder={placeholder}
+                            className="h-9 w-full bg-[#091323] border border-[#162135] rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                          />
                         )}
                       </label>
                     ))}
-                    {[{ key: "description", label: "Description", placeholder: "Helps customers find accurate answers from product PDFs." }, { key: "goal", label: "Goal", placeholder: "Resolve user questions using uploaded knowledge..." }, { key: "greeting", label: "Greeting", placeholder: "Hi, I'm Aira. How can I help?" }, { key: "fallback", label: "Fallback", placeholder: "I don't have enough context yet." }].map(({ key, label, placeholder }) => (
-                      <label key={key} className="sm:col-span-2 flex flex-col gap-1">
-                        <span className="text-xs font-medium text-muted-foreground">{label}</span>
-                        <textarea value={(form as Record<string, string>)[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} rows={key === "goal" || key === "description" ? 3 : 2}
-                          className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+                    {[
+                      { key: "description", label: "Description", placeholder: "Helps customers find accurate answers from product PDFs." },
+                      { key: "goal", label: "Goal", placeholder: "Resolve user questions using uploaded knowledge..." },
+                      { key: "greeting", label: "Greeting", placeholder: "Hi, I'm Aira. How can I help?" },
+                      { key: "fallback", label: "Fallback", placeholder: "I don't have enough context yet." },
+                    ].map(({ key, label, placeholder }) => (
+                      <label key={key} className="sm:col-span-2 flex flex-col gap-1.5">
+                        <span className="text-xs font-medium text-slate-400">{label}</span>
+                        <textarea
+                          value={(form as Record<string, string>)[key]}
+                          onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                          placeholder={placeholder}
+                          rows={key === "goal" || key === "description" ? 3 : 2}
+                          className="w-full bg-[#091323] border border-[#162135] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+                        />
                       </label>
                     ))}
                   </div>
@@ -176,61 +233,100 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
             )}
 
             {step === 2 && (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 <div>
-                  <h3 className="font-semibold mb-1">Knowledge</h3>
-                  <p className="text-sm text-muted-foreground mb-4">PDF, TXT, or manual FAQ input.</p>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400 mb-3">Knowledge</div>
+                  <p className="text-sm text-slate-400 mb-4">PDF, TXT, or manual FAQ input.</p>
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
-                    className="flex flex-col items-center gap-3 p-8 rounded-xl border-2 border-dashed border-border hover:border-foreground/30 cursor-pointer transition-colors bg-muted/20">
-                    <UploadCloud className="w-8 h-8 text-muted-foreground" />
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleFiles(e.dataTransfer.files);
+                    }}
+                    className="border-2 border-dashed border-[#162135] hover:border-emerald-500/40 bg-[#050C1A]/50 rounded-xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-colors group"
+                  >
+                    <UploadCloud className="w-8 h-8 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                     <div className="text-center">
-                      <p className="font-medium text-sm">Drop files or click to upload</p>
-                      <p className="text-xs text-muted-foreground mt-1">Supports PDF and TXT. Uploading → Extracting → Chunking → Ready.</p>
+                      <p className="font-medium text-sm text-slate-300">Drop files or click to upload</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Supports PDF and TXT. Uploading → Extracting → Chunking → Ready.</p>
                     </div>
                     <input ref={fileInputRef} type="file" accept=".pdf,.txt,text/plain,application/pdf" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
                   </div>
                 </div>
+
                 {agent.knowledge.length > 0 && (
                   <div className="space-y-2">
                     {agent.knowledge.map((item) => (
-                      <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-3 p-3 bg-[#050C1A] border border-[#162135] rounded-lg"
+                      >
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{item.title}</div>
-                          <div className="text-xs text-muted-foreground">{item.type.toUpperCase()} · {formatBytes(item.size || item.text.length)} · {item.chunkCount || chunkText(item.text).length} chunks</div>
+                          <div className="font-medium text-sm text-slate-200 truncate">{item.title}</div>
+                          <div className="text-xs text-slate-500">
+                            {item.type.toUpperCase()} · {formatBytes(item.size || item.text.length)} · {item.chunkCount || chunkText(item.text).length} chunks
+                          </div>
                         </div>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">{item.status || "Ready"}</span>
-                        <button onClick={() => removeSource(item.id)} className="text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <Badge variant="green" className="shrink-0">
+                          Ready
+                        </Badge>
+                        <button
+                          onClick={() => removeSource(item.id)}
+                          className="text-slate-500 hover:text-emerald-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </motion.div>
                     ))}
                   </div>
                 )}
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Manual FAQ</span>
-                  <textarea value={form.manualFaq} onChange={(e) => setForm((f) => ({ ...f, manualFaq: e.target.value }))} rows={6}
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-slate-400">Manual FAQ</span>
+                  <textarea
+                    value={form.manualFaq}
+                    onChange={(e) => setForm((f) => ({ ...f, manualFaq: e.target.value }))}
+                    rows={6}
                     placeholder={"Q: What is the refund policy?\nA: Refunds are available within 14 days..."}
-                    className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none font-mono text-xs" />
+                    className="w-full bg-[#091323] border border-[#162135] rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+                  />
                 </label>
               </div>
             )}
 
             {step === 3 && (
               <div className="space-y-4">
-                <h3 className="font-semibold mb-1">Review & Test</h3>
-                <p className="text-sm text-muted-foreground mb-4">Check readiness before saving and testing.</p>
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-                    <strong className="text-sm">{readiness.every((r) => r.done) ? "Agent ready" : "Agent readiness"}</strong>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{readiness.filter((r) => r.done).length}/{readiness.length}</span>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400 mb-3">Review & Test</div>
+                  <p className="text-sm text-slate-400 mb-4">Check readiness before saving and testing.</p>
+                </div>
+
+                <div className="bg-[#091323] border border-[#162135] rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#162135] bg-emerald-500/5">
+                    <strong className="text-sm text-slate-200">{readiness.every((r) => r.done) ? "Agent ready" : "Agent readiness"}</strong>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
+                      {readiness.filter((r) => r.done).length}/{readiness.length}
+                    </span>
                   </div>
                   {readiness.map((check) => (
-                    <div key={check.label} className={cn("flex items-start gap-3 px-4 py-3 border-b border-border last:border-0", check.done ? "bg-green-50/50 dark:bg-green-900/10" : "")}>
-                      {check.done ? <Check className="w-4 h-4 text-green-600 shrink-0 mt-0.5" /> : <Circle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />}
+                    <div
+                      key={check.label}
+                      className={cn(
+                        "flex items-start gap-3 px-5 py-3.5 border-b border-[#162135] last:border-0",
+                        check.done ? "bg-emerald-500/5" : ""
+                      )}
+                    >
+                      {check.done ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      ) : (
+                        <Circle className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
+                      )}
                       <div>
-                        <div className="font-medium text-sm">{check.label}</div>
-                        <div className="text-xs text-muted-foreground">{check.detail}</div>
+                        <div className="font-medium text-sm text-slate-200">{check.label}</div>
+                        <div className="text-xs text-slate-500">{check.detail}</div>
                       </div>
                     </div>
                   ))}
@@ -241,29 +337,60 @@ export function Builder({ state, onStateChange, onNavigate, onReset }: BuilderPr
         </AnimatePresence>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 p-4 border-t border-border bg-muted/20">
-          <Button variant="ghost" size="sm" onClick={onReset} className="gap-1.5 text-xs mr-auto">
+        <div className="flex items-center gap-2 p-4 border-t border-[#162135] bg-[#050C1A]/50">
+          <Button variant="ghost" size="sm" onClick={onReset} className="gap-1.5 text-xs mr-auto text-slate-400 hover:text-slate-200">
             <RotateCcw className="w-3.5 h-3.5" /> Reset Demo
           </Button>
-          {step > 1 && <Button variant="secondary" size="sm" onClick={() => setStep((s) => s - 1)} className="gap-1.5"><ArrowLeft className="w-3.5 h-3.5" />Back</Button>}
-          {step < 3 && <Button size="sm" onClick={handleNext} className="gap-1.5">Continue<ArrowRight className="w-3.5 h-3.5" /></Button>}
-          {step === 3 && <Button size="sm" onClick={handleSave} className="gap-1.5"><Save className="w-3.5 h-3.5" />Save & Test Agent</Button>}
+          {step > 1 && (
+            <Button variant="secondary" size="sm" onClick={() => setStep((s) => s - 1)} className="gap-1.5">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back
+            </Button>
+          )}
+          {step < 3 && (
+            <Button size="sm" onClick={handleNext} className="gap-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600 text-black hover:opacity-90">
+              Continue
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {step === 3 && (
+            <Button size="sm" onClick={handleSave} className="gap-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600 text-black hover:opacity-90">
+              <Save className="w-3.5 h-3.5" />
+              Save & Test Agent
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Prompt Preview */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col h-fit sticky top-4">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="font-semibold text-sm">System Prompt</h3>
-          <button onClick={copyPrompt} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            {copied ? <><Check className="w-3.5 h-3.5 text-green-500" />Copied!</> : <><Copy className="w-3.5 h-3.5" />Copy</>}
+      {/* Right panel — System Prompt Preview */}
+      <div className="bg-[#091323] border border-[#162135] rounded-xl overflow-hidden flex flex-col h-fit sticky top-4">
+        <div className="h-0.5 bg-gradient-to-r from-emerald-500/0 via-emerald-500/60 to-emerald-500/0" />
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#162135]">
+          <h3 className="font-semibold text-sm text-slate-100">System Prompt</h3>
+          <button
+            onClick={copyPrompt}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400 transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </>
+            )}
           </button>
         </div>
-        <div className="flex gap-1.5 px-4 py-2 border-b border-border bg-muted/20">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">Auto-generated</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">Universal guidelines</span>
+        <div className="flex gap-1.5 px-4 py-2 border-b border-[#162135]">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-slate-500 font-medium">Auto-generated</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-slate-500 font-medium">Universal guidelines</span>
         </div>
-        <pre className="p-4 text-[11px] text-muted-foreground leading-relaxed whitespace-pre-wrap break-words max-h-96 overflow-y-auto scrollbar-thin font-mono">{buildPrompt(draftAgent)}</pre>
+        <pre className="p-4 text-[11px] font-mono text-slate-400 leading-relaxed whitespace-pre-wrap break-words max-h-[480px] overflow-y-auto">
+          {buildPrompt(draftAgent)}
+        </pre>
       </div>
     </div>
   );
