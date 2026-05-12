@@ -125,13 +125,62 @@ export function Test() {
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null)
   const [streamingContent, setStreamingContent] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null)
+
+  // Priority list — best to worst. Natural/Neural voices sound human, avoid robotic ones.
+  const VOICE_PRIORITY = [
+    'Microsoft Aria Online (Natural) - English (United States)',
+    'Microsoft Jenny Online (Natural) - English (United States)',
+    'Microsoft Guy Online (Natural) - English (United States)',
+    'Microsoft Aria Online (Natural)',
+    'Microsoft Jenny Online (Natural)',
+    'Google US English',
+    'Google UK English Female',
+    'Samantha',   // macOS
+    'Karen',      // macOS Australian
+    'Moira',      // macOS Irish
+  ]
+
+  const pickBestVoice = () => {
+    const voices = window.speechSynthesis.getVoices()
+    if (!voices.length) return
+    for (const name of VOICE_PRIORITY) {
+      const match = voices.find(v => v.name === name)
+      if (match) { selectedVoiceRef.current = match; return }
+    }
+    // Fallback: any Natural/Neural English voice
+    const natural = voices.find(v => v.lang.startsWith('en') && /natural|neural/i.test(v.name))
+    if (natural) { selectedVoiceRef.current = natural; return }
+    // Fallback: any en-US voice
+    const enUs = voices.find(v => v.lang === 'en-US')
+    if (enUs) selectedVoiceRef.current = enUs
+  }
+
+  useEffect(() => {
+    pickBestVoice()
+    window.speechSynthesis.addEventListener('voiceschanged', pickBestVoice)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', pickBestVoice)
+  }, [])
+
+  // Strip markdown symbols so TTS doesn't read "hashtag" or "asterisk"
+  const stripMarkdown = (text: string) =>
+    text
+      .replace(/^#{1,3}\s+/gm, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/^[-*]\s+/gm, '')
+      .replace(/\n{2,}/g, '. ')
+      .replace(/\n/g, ' ')
+      .trim()
 
   const speak = (text: string) => {
     if (!window.speechSynthesis) return
     window.speechSynthesis.cancel()
+    const clean = stripMarkdown(text)
     if (voiceEnabled) {
-      const utt = new SpeechSynthesisUtterance(text)
-      utt.rate = 1.05
+      const utt = new SpeechSynthesisUtterance(clean)
+      if (selectedVoiceRef.current) utt.voice = selectedVoiceRef.current
+      utt.rate = 1.0
+      utt.pitch = 1.0
       utt.onboundary = (e) => {
         if (e.name === 'word') {
           setStreamingContent(text.substring(0, e.charIndex + ((e as SpeechSynthesisEvent & { length?: number }).length ?? 1)))
@@ -141,7 +190,6 @@ export function Test() {
       window.speechSynthesis.speak(utt)
       setStreamingContent('')
     } else {
-      // Fallback timer when voice is disabled: 280ms/word
       setStreamingContent('')
       const words = text.split(' ')
       let i = 0
