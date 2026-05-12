@@ -147,3 +147,51 @@ body {
 }
 
 .animate-float { animation: float 4s ease-in-out infinite; }
+
+/* ============================================================
+   FORCED-COLORS PROOF BACKGROUNDS
+   background-image: url() is the only property preserved by
+   ALL browser forced-colors implementations (spec + bugs).
+   These override the Tailwind @layer utilities (which use
+   background-color) because they are in the unlayered section.
+   ============================================================ */
+
+html, body {
+  background-image: url('/bg-main.svg') !important;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center top;
+}
+
+/* Override all bg-aira-* Tailwind utilities with url()-based backgrounds */
+.bg-aira-bg {
+  background-image: url('/bg-main.svg');
+  background-size: cover;
+  background-position: center top;
+}
+
+.bg-aira-card {
+  background-image: url('/bg-card.svg');
+  background-size: cover;
+}
+
+/* Opacity variants: use semi-transparent overlay via pseudo-element trick
+   OR just use the solid color SVG (opacity via parent is fine visually) */
+.bg-aira-bg\/80,
+.bg-aira-bg\/60,
+.bg-aira-bg\/50,
+.bg-aira-bg\/40,
+.bg-aira-bg\/30 {
+  background-image: url('/bg-main.svg');
+  background-size: cover;
+  background-position: center top;
+}
+
+/* Keep forced-color-adjust as belt-and-suspenders for browsers that DO support it */
+@media (forced-colors: active) {
+  html, body, *, *::before, *::after {
+    forced-color-adjust: none !important;
+    -webkit-forced-color-adjust: none !important;
+  }
+}
