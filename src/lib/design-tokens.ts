@@ -96,12 +96,12 @@ export const spacing = {
 
 // Tailwind class helpers (composable building blocks)
 export const tw = {
-  card: 'bg-[#091323] border border-[#162135] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.4),0_8px_24px_rgba(0,0,0,0.3)]',
+  card: 'bg-aira-card border border-aira-line rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.4),0_8px_24px_rgba(0,0,0,0.3)]',
   cardHover: 'hover:border-[rgba(16,185,129,0.2)] hover:shadow-[0_0_20px_rgba(16,185,129,0.08)] transition-all duration-200',
   badge: 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold',
   badgeGreen: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
   badgeDraft: 'bg-white/5 text-slate-400 border border-white/10',
-  input: 'bg-[#091323] border border-[#162135] rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all',
+  input: 'bg-aira-card border border-aira-line rounded-lg px-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all',
   buttonPrimary: 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black bg-gradient-to-r from-emerald-400 to-emerald-600 hover:from-emerald-300 hover:to-emerald-500 shadow-[0_1px_2px_rgba(0,0,0,0.5),0_0_0_1px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition-all duration-200 active:scale-[0.98]',
   buttonSecondary: 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-slate-100 transition-all duration-200 active:scale-[0.98]',
   buttonGhost: 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-white/8 transition-all duration-150',
