@@ -1,3 +1,5 @@
+// TODO: build systemPrompt server-side from stored agent config — never trust client-supplied prompts
+
 const GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -5,9 +7,24 @@ const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
 module.exports = async function handler(req, res) {
+  // CORS headers
+  res.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-aira-key");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Lightweight API key guard (skipped when AIRA_API_KEY env var is not set, so dev is unaffected)
+  const airaApiKey = process.env.AIRA_API_KEY;
+  if (airaApiKey && req.headers["x-aira-key"] !== airaApiKey) {
+    return res.status(401).json({ error: "Missing or invalid x-aira-key header" });
   }
 
   try {
@@ -15,6 +32,17 @@ module.exports = async function handler(req, res) {
 
     if (!question || !systemPrompt) {
       return res.status(400).json({ error: "Missing question or systemPrompt" });
+    }
+
+    // Input length limits
+    if (question.length > 4000) {
+      return res.status(400).json({ error: "question exceeds maximum length of 4000 characters" });
+    }
+    if (systemPrompt.length > 8000) {
+      return res.status(400).json({ error: "systemPrompt exceeds maximum length of 8000 characters" });
+    }
+    if (context && context.length > 12000) {
+      return res.status(400).json({ error: "context exceeds maximum length of 12000 characters" });
     }
 
     const prompt = buildPrompt({ question, systemPrompt, context, sources, agentName, priorMessageCount });
