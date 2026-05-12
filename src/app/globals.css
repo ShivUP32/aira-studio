@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "../../src/**/*.{tsx,ts,jsx,js}";
+@source "../../app/**/*.{tsx,ts,jsx,js}";
 
 :root {
   /* Use HSL values for all tokens */
