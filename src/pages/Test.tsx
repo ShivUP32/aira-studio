@@ -176,38 +176,34 @@ export function Test() {
     if (!window.speechSynthesis) return
     window.speechSynthesis.cancel()
     const clean = stripMarkdown(text)
+    const textWords = text.split(' ').filter(Boolean)
+    const cleanWordCount = Math.max(clean.split(/\s+/).filter(Boolean).length, 1)
+
+    // TTS at rate=1.0 speaks ~2.4 words/sec. Adjust per-word interval
+    // proportionally so original (longer) text finishes at same time.
+    const msPerWord = Math.round(1000 / (2.4 * (textWords.length / cleanWordCount)))
+
+    setStreamingContent('')
 
     if (voiceEnabled) {
       const utt = new SpeechSynthesisUtterance(clean)
       if (selectedVoiceRef.current) utt.voice = selectedVoiceRef.current
       utt.rate = 1.0
       utt.pitch = 1.0
-
-      const textWords = text.split(' ')
-      const cleanWordCount = clean.split(/\s+/).length
-      let spokenWords = 0
-
-      utt.onboundary = (e) => {
-        if (e.name !== 'word') return
-        spokenWords++
-        // Map spoken word position in clean text → proportional position in original markdown
-        const progress = spokenWords / cleanWordCount
-        const targetIdx = Math.min(Math.ceil(progress * textWords.length), textWords.length)
-        setStreamingContent(textWords.slice(0, targetIdx).join(' '))
-      }
       utt.onend = () => setStreamingContent(text)
       window.speechSynthesis.speak(utt)
-      setStreamingContent('')
-    } else {
-      setStreamingContent('')
-      const words = text.split(' ')
-      let i = 0
-      const interval = setInterval(() => {
-        i++
-        setStreamingContent(words.slice(0, i).join(' '))
-        if (i >= words.length) clearInterval(interval)
-      }, 280)
     }
+
+    // Timer-based streaming — reliable on all browsers unlike onboundary
+    let wordIdx = 0
+    const interval = setInterval(() => {
+      wordIdx++
+      setStreamingContent(textWords.slice(0, wordIdx).join(' '))
+      if (wordIdx >= textWords.length) {
+        clearInterval(interval)
+        setStreamingContent(text)
+      }
+    }, voiceEnabled ? msPerWord : 280)
   }
 
   useEffect(() => {
