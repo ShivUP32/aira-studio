@@ -14,7 +14,7 @@ app.use(express.json())
 app.all('/api/chat', (req, res) => chatHandler(req, res))
 
 app.use(express.static(path.join(__dirname, 'dist')))
-app.get('*', (_, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')))
+app.get('/{*path}', (_, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')))
 
 const PORT = process.env.PORT || 3003
 app.listen(PORT, () => console.log(`Aira Studio running at http://localhost:${PORT}`))
