@@ -8,6 +8,7 @@ import { Builder } from './pages/Builder'
 import { Test } from './pages/Test'
 import { Publish } from './pages/Publish'
 import { Analytics } from './pages/Analytics'
+import { FloatingAssistant } from './components/onboarding/FloatingAssistant'
 
 export type Route = 'dashboard' | 'builder' | 'test' | 'publish' | 'analytics'
 
@@ -21,6 +22,9 @@ const pageTransition = { duration: 0.25 }
 
 function AppInner() {
   const [route, setRoute] = useState<Route>('dashboard')
+  // Tracks whether the user has an active conversation on the Test page
+  // so the FloatingAssistant suppresses nudges while they're chatting
+  const [testPageHasMessages, setTestPageHasMessages] = useState(false)
 
   const navigate = (r: Route) => setRoute(r)
 
@@ -41,13 +45,14 @@ function AppInner() {
             >
               {route === 'dashboard' && <Dashboard onNavigate={navigate} />}
               {route === 'builder' && <Builder onNavigate={navigate} />}
-              {route === 'test' && <Test />}
+              {route === 'test' && <Test onHasMessagesChange={setTestPageHasMessages} />}
               {route === 'publish' && <Publish />}
               {route === 'analytics' && <Analytics />}
             </motion.div>
           </AnimatePresence>
         </main>
       </div>
+      <FloatingAssistant currentRoute={route} testPageHasMessages={testPageHasMessages} />
     </div>
   )
 }

@@ -1,5 +1,108 @@
 export const STORAGE_KEY = "aira-studio-state"
 
+export const AGENT_DEFAULT_QUICK_ACTIONS: Record<string, string[]> = {
+  'Learning Companion': ['Explain a concept', 'Give me a quiz', 'Show an example'],
+  'Support Agent':      ['Common issues', 'How to reset?', 'Talk to someone'],
+  'Sales Assistant':    ['Product overview', 'Pricing info', 'Book a demo'],
+  'FAQ Assistant':      ['How does it work?', 'Common questions', 'Getting started'],
+}
+export const FALLBACK_QUICK_ACTIONS = ['Tell me more', 'Give an example', 'What else can you do?']
+
+export const ONBOARDING_SYSTEM_PROMPT = `You are Aira, the friendly onboarding assistant built into Aira Studio — a platform for creating, testing, and publishing custom AI agents without code.
+
+Help users understand Aira Studio features:
+- Creating and configuring AI agents (Support, Sales, Learning Companion, FAQ)
+- Building knowledge bases (PDF, TXT, Markdown, DOCX up to 10 MB)
+- Testing agents with voice mode, confidence scores, and source citations
+- Publishing agents via embed snippets
+- Understanding fallback behavior, tone, greeting, and agent skills
+
+Be concise, warm, and practical. Use **bold** for key terms and step numbers. Keep answers under 100 words unless a step-by-step is needed.`
+
+export interface OnboardingFAQItem {
+  q: string
+  a: string
+  tags: string[]
+}
+
+export const ONBOARDING_FAQ: OnboardingFAQItem[] = [
+  {
+    tags: ['create', 'start', 'first', 'begin', 'new', 'make', 'build', 'agent'],
+    q: 'How do I create my first agent?',
+    a: 'Go to **Create Agent** in the sidebar. Pick a template — Support, Sales, Learning, or FAQ. Fill in the **name**, **goal**, **tone**, and **greeting**. Optionally upload knowledge files. Then click **Create Agent** in the Review step. Done!',
+  },
+  {
+    tags: ['type', 'template', 'difference', 'which', 'support', 'sales', 'learning', 'faq', 'choose', 'pick'],
+    q: 'Which agent type should I pick?',
+    a: '**Support Agent** — resolves customer issues\n**Sales Assistant** — qualifies leads, explains pricing\n**Learning Companion** — teaches via Socratic questioning\n**FAQ Assistant** — matches common questions to preset answers\n\nPick whichever matches your primary use case!',
+  },
+  {
+    tags: ['knowledge', 'file', 'upload', 'format', 'pdf', 'document', 'txt', 'docx', 'markdown'],
+    q: 'What files can I upload to the knowledge base?',
+    a: 'Supported formats: **PDF, TXT, Markdown, DOCX** — up to **10 MB** per file. Files are auto-chunked into 512-token segments for best retrieval. Text must be extractable — scanned images won\'t work.',
+  },
+  {
+    tags: ['test', 'try', 'testing', 'preview', 'chat', 'conversation'],
+    q: 'How do I test my agent?',
+    a: 'Click **Test Agent** in the sidebar. Chat with your agent directly — use the quick action buttons for common scenarios or type your own questions. The **confidence score** on the right shows how well each answer matched your knowledge base.',
+  },
+  {
+    tags: ['publish', 'embed', 'website', 'deploy', 'share', 'code', 'snippet', 'html', 'widget'],
+    q: 'How do I publish and embed my agent?',
+    a: 'Go to **Publish** in the sidebar. Copy the **embed snippet** — a small HTML/JS block — and paste it into any webpage. Your agent appears as a chat widget wherever you add it.',
+  },
+  {
+    tags: ['confidence', 'score', 'percentage', 'accuracy', 'percent'],
+    q: 'What does the confidence score mean?',
+    a: '**80%+** — High confidence, source-backed answer\n**60–79%** — Partial match\n**Below 60%** — Low confidence, fallback may trigger\n\nIt reflects how closely your agent\'s answer matched content in the knowledge base.',
+  },
+  {
+    tags: ['fallback', 'default', 'no answer', "don't know", 'unknown', 'when', 'message'],
+    q: "What is the fallback message?",
+    a: "The fallback is what your agent says when it can\'t find a confident answer. Set it in the Builder. A good fallback directs users to a contact: *\"I don\'t have that info yet — please email support@yourcompany.com.\"*",
+  },
+  {
+    tags: ['tone', 'personality', 'friendly', 'professional', 'formal', 'style'],
+    q: "How do I set the agent's tone?",
+    a: "In the **Builder**, the Tone field lets you describe how the agent communicates — e.g., *\"Friendly and concise\"* or *\"Formal and professional\"*. The agent follows this tone in every response.",
+  },
+  {
+    tags: ['greeting', 'welcome', 'first message', 'hello', 'opening'],
+    q: 'What is the greeting message?',
+    a: "The greeting is the agent's first message when a user opens chat. Make it welcoming and clear: *\"Hi! I can help with your questions about [product]. What would you like to know?\"*",
+  },
+  {
+    tags: ['voice', 'audio', 'speech', 'tts', 'text to speech', 'speaker', 'sound'],
+    q: 'How does voice mode work?',
+    a: 'In the **Test** page, click the **speaker icon** in the chat header to toggle voice. When on, the agent reads responses aloud using your browser\'s Text-to-Speech. The best available natural voice on your device is selected automatically.',
+  },
+  {
+    tags: ['multiple', 'agents', 'how many', 'limit', 'more', 'second', 'another'],
+    q: 'Can I create multiple agents?',
+    a: 'Yes — create as many agents as you need. Each has its own knowledge base, tone, and config. Switch between them using the **agent selector** in the top bar on the Test and Publish pages.',
+  },
+  {
+    tags: ['skills', 'capabilities', 'features', 'what can', 'ability', 'do'],
+    q: 'What skills do agents have built in?',
+    a: 'Each type has built-in skills:\n- **Support** — empathy, issue categorization, escalation\n- **Sales** — BANT qualification, objection handling, soft CTAs\n- **Learning** — Socratic questioning, step scaffolding, analogies\n- **FAQ** — topic matching, concise answers, related suggestions',
+  },
+  {
+    tags: ['analytics', 'stats', 'metrics', 'data', 'usage', 'track', 'performance'],
+    q: 'What can I see in Analytics?',
+    a: 'The **Analytics** page shows usage over time — conversations, common questions, confidence score trends, and user feedback (thumbs up/down). Use this data to identify gaps in your knowledge base.',
+  },
+  {
+    tags: ['error', 'not working', 'broken', 'issue', 'problem', 'bug', 'wrong', 'fix'],
+    q: "My agent isn't responding correctly. What do I do?",
+    a: '1. Check knowledge base files show **Ready** status\n2. Make sure your agent **Goal** is specific\n3. Click **Reset** in the Test page to start fresh\n4. If the model is unavailable, wait a minute and retry',
+  },
+  {
+    tags: ['free', 'cost', 'price', 'pricing', 'plan', 'beta', 'paid'],
+    q: 'Is Aira Studio free?',
+    a: 'Aira Studio is in **Beta** and free to use. AI responses are powered by the Groq API. Watch for updates on future plans.',
+  },
+]
+
 export const GUARDRAILS_PROMPT = `## Safety Guardrails
 
 You are an AI assistant committed to responsible and ethical behavior. You must follow these safety guidelines in all interactions:

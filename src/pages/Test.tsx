@@ -7,37 +7,12 @@ import {
 import { useApp } from '../lib/store'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
-import { buildSystemPrompt } from '../lib/data'
+import { buildSystemPrompt, AGENT_DEFAULT_QUICK_ACTIONS, FALLBACK_QUICK_ACTIONS } from '../lib/data'
 import type { Message } from '../lib/store'
 
 function makeId() {
   return Math.random().toString(36).slice(2, 10)
 }
-
-const QUICK_ACTION_RESPONSES: Record<string, { content: string; confidence: number; sources: string[] }> = {
-  'Upload readiness': {
-    content: "## Upload Readiness Checklist\n\nYour knowledge base is ready for upload when the following criteria are met:\n\n- **File format** — PDF, TXT, Markdown, or DOCX only\n- **File size** — Maximum 10 MB per file\n- **Content quality** — Text must be extractable (no scanned images)\n- **Language** — English recommended for best embedding quality\n\nOnce uploaded, files are automatically **chunked into 512-token segments** and stored in the vector database.",
-    confidence: 0.94,
-    sources: ['Upload Readiness Guide', 'File Format Reference'],
-  },
-  'Source-backed answer': {
-    content: "## Source-Backed Answer Example\n\nWhen your agent retrieves a high-confidence answer, it will:\n\n- **Cite sources** — show the knowledge chunks that backed the response\n- **Display confidence score** — percentage shown in the sidebar\n- **Highlight key terms** — relevant terms from the source are emphasized\n\nA source-backed answer requires a confidence score **above 80%**. Below that threshold, the agent adds a disclaimer or triggers the fallback response.",
-    confidence: 0.89,
-    sources: ['Agent Response Guide', 'Aira Studio PRD Summary'],
-  },
-  'Fallback behavior': {
-    content: "## Fallback Behavior\n\nWhen the agent cannot find a confident answer, it activates the fallback flow:\n\n- **Confidence below 50%** — fallback message is shown instead of a low-quality answer\n- **Default fallback** — \"I don't have enough information to answer that confidently. Please contact support.\"\n- **Custom fallback** — you can set a custom fallback message in the Builder under Agent Settings\n\nFallback responses are **never source-cited** and are clearly marked to avoid misleading users.",
-    confidence: 0.92,
-    sources: ['Fallback Configuration Guide'],
-  },
-}
-
-
-const QUICK_TESTS = [
-  'Upload readiness',
-  'Source-backed answer',
-  'Fallback behavior',
-]
 
 const SUGGESTED_QUESTIONS = [
   'What file formats are supported?',
@@ -143,7 +118,11 @@ const itemVariants = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 }
 
-export function Test() {
+interface TestProps {
+  onHasMessagesChange?: (hasMessages: boolean) => void
+}
+
+export function Test({ onHasMessagesChange }: TestProps) {
   const { state } = useApp()
   const activeAgent = state.agents.find(a => a.id === state.activeAgentId)
   const [conv, setConv] = useState<ActiveConversation>({
@@ -156,6 +135,9 @@ export function Test() {
   const [isTyping, setIsTyping] = useState(false)
   const [modelStatus, setModelStatus] = useState<'waiting' | 'thinking' | 'ready'>('waiting')
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
+  const [quickActions, setQuickActions] = useState<string[]>(
+    AGENT_DEFAULT_QUICK_ACTIONS[activeAgent?.type ?? ''] ?? FALLBACK_QUICK_ACTIONS
+  )
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const voiceEnabledRef = useRef(true)
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null)
@@ -277,6 +259,10 @@ export function Test() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [conv.messages, isTyping])
 
+  useEffect(() => {
+    onHasMessagesChange?.(conv.messages.length > 0)
+  }, [conv.messages.length, onHasMessagesChange])
+
   // Track active heading from streaming content (ATX ## and setext underline styles)
   useEffect(() => {
     if (streamingContent) {
@@ -297,6 +283,32 @@ export function Test() {
     }
   }, [streamingContent])
 
+  // Fire-and-forget: ask Groq to suggest 3 follow-up questions based on the last response
+  const generateFollowUps = (lastResponse: string) => {
+    const agentType = activeAgent?.type ?? 'assistant'
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: `Based on this response, suggest exactly 3 short follow-up questions (max 6 words each) a user might ask next. Return ONLY a JSON array like: ["Q1?","Q2?","Q3?"] — no explanation, no other text.\n\nResponse:\n${lastResponse.slice(0, 600)}`,
+        systemPrompt: `You generate follow-up questions for a ${agentType}. Return ONLY a valid JSON array of 3 short strings. Nothing else.`,
+        agentName: 'Follow-up Generator',
+        priorMessageCount: 0,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.answer) return
+        const m = data.answer.match(/\[[\s\S]*?\]/)
+        if (!m) return
+        const parsed = JSON.parse(m[0])
+        if (Array.isArray(parsed) && parsed.length >= 3) {
+          setQuickActions(parsed.slice(0, 3).map(String))
+        }
+      })
+      .catch(() => { /* silently keep current quick actions */ })
+  }
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || isTyping) return
 
@@ -311,32 +323,7 @@ export function Test() {
     setIsTyping(true)
     setModelStatus('thinking')
 
-    // Use quick action mock for demo buttons, Groq for everything else
-    const mockResp = QUICK_ACTION_RESPONSES[text.trim()]
-
-    if (mockResp) {
-      const assistantMsg: Message = {
-        id: makeId(),
-        role: 'assistant',
-        content: mockResp.content,
-        confidence: mockResp.confidence,
-        sources: mockResp.sources,
-      }
-      setStreamingMsgId(assistantMsg.id)
-      setConv(prev => ({
-        ...prev,
-        messages: [...prev.messages, assistantMsg],
-        lastConfidence: mockResp.confidence,
-        lastSources: mockResp.sources,
-      }))
-      speak(mockResp.content)
-      setIsTyping(false)
-      setModelStatus('ready')
-      setFeedback(null)
-      return
-    }
-
-    // Call real Groq API
+    // Call Groq API for all messages
     try {
       const systemPrompt = activeAgent ? buildSystemPrompt(activeAgent) : 'You are a helpful assistant.'
       const res = await fetch('/api/chat', {
@@ -370,6 +357,7 @@ export function Test() {
         lastSources: [],
       }))
       speak(answer)
+      generateFollowUps(answer)
       setIsTyping(false)
       setModelStatus('ready')
       setFeedback(null)
@@ -386,6 +374,7 @@ export function Test() {
     setConv({ id: makeId(), messages: [], lastConfidence: 0, lastSources: [] })
     setModelStatus('waiting')
     setFeedback(null)
+    setQuickActions(AGENT_DEFAULT_QUICK_ACTIONS[activeAgent?.type ?? ''] ?? FALLBACK_QUICK_ACTIONS)
   }
 
   const confidencePct = Math.round(conv.lastConfidence * 100)
@@ -581,34 +570,24 @@ export function Test() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick test buttons */}
-        <div
-          style={{
-            padding: '10px 18px',
-            borderTop: '1px solid var(--border)',
-            display: 'flex',
-            gap: 8,
-            flexShrink: 0,
-          }}
-        >
-          {QUICK_TESTS.map(t => (
-            <button
-              key={t}
-              onClick={() => sendMessage(t)}
-              style={{
-                background: 'var(--surface-2)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '5px 10px',
-                fontSize: 11,
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                fontWeight: 500,
-              }}
-            >
-              {t}
-            </button>
-          ))}
+        {/* Dynamic quick action buttons — seeded from agent type, updated after each response */}
+        <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+          <AnimatePresence mode="popLayout">
+            {quickActions.map(t => (
+              <motion.button
+                key={t}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.18 }}
+                onClick={() => sendMessage(t)}
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', fontSize: 11, color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 500 }}
+              >
+                {t}
+              </motion.button>
+            ))}
+          </AnimatePresence>
         </div>
 
         {/* Input form */}
