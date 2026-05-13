@@ -250,6 +250,8 @@ export function Test({ onHasMessagesChange }: TestProps) {
       // called speak() is harmless, but Chrome's cancel() is async internally.
       // Calling cancel() then immediately speak() causes Chrome to silently drop
       // the utterance. The setTimeout gives Chrome one tick to flush the cancel.
+      // Cancel any previous utterance, then defer speak() by 120ms so Chrome
+      // fully processes the cancel before the new utterance is submitted.
       window.speechSynthesis.cancel()
       if (!selectedVoiceRef.current) pickBestVoice()
       const utt = new SpeechSynthesisUtterance(clean)
@@ -258,9 +260,7 @@ export function Test({ onHasMessagesChange }: TestProps) {
       utt.pitch = 1.0
       utt.onend = () => setStreamingContent(text)
       setTimeout(() => {
-        // Re-check ref in case user toggled off during the delay
-        if (!voiceEnabledRef.current) return
-        if (window.speechSynthesis.paused) window.speechSynthesis.resume()
+        if (!voiceEnabledRef.current) return  // muted during the 120ms window
         window.speechSynthesis.speak(utt)
       }, 120)
     }
@@ -513,12 +513,12 @@ export function Test({ onHasMessagesChange }: TestProps) {
                 setVoiceEnabled(v => {
                   const next = !v
                   voiceEnabledRef.current = next
+                  // pause() silences audio without destroying the synthesis engine.
+                  // cancel() permanently breaks Chrome's state — never use it here.
                   if (!next) {
-                    // Turning OFF: stop any current speech
-                    window.speechSynthesis?.cancel()
+                    window.speechSynthesis?.pause()
                   } else {
-                    // Turning ON: un-pause synthesis in case Chrome suspended it
-                    if (window.speechSynthesis?.paused) window.speechSynthesis.resume()
+                    window.speechSynthesis?.resume()
                   }
                   return next
                 })
