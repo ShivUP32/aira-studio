@@ -1,12 +1,10 @@
 import 'dotenv/config'
 import express from 'express'
 import path from 'path'
-import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
+import chatHandler from './api/chat.js'
 
-const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const chatHandler = require('./api/chat.cjs')
 
 const app = express()
 app.use(express.json())
