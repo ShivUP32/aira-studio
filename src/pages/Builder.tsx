@@ -14,6 +14,7 @@ import type { Route } from '../App'
 
 interface BuilderProps {
   onNavigate: (route: Route) => void
+  editAgent?: Agent
 }
 
 const templateIcons: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -70,27 +71,33 @@ function KnowledgeStatusIcon({ status }: { status: KnowledgeItem['status'] }) {
   return <Clock size={14} color="var(--yellow)" />
 }
 
-export function Builder({ onNavigate }: BuilderProps) {
+export function Builder({ onNavigate, editAgent }: BuilderProps) {
   const { dispatch } = useApp()
   const [step, setStep] = useState(0)
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('support')
-  const [form, setForm] = useState<Omit<Agent, 'id' | 'knowledge' | 'published' | 'createdAt'>>({
-    name: '',
-    type: 'Support Agent',
-    description: '',
-    tone: 'Professional',
-    voice: 'en-US',
-    goal: '',
-    greeting: 'Hi! How can I help you today?',
-    fallback: "I'm not sure about that. Please contact our support team.",
-  })
-  const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(
+    editAgent ? (agentTemplates.find(tpl => tpl.type === editAgent.type)?.id ?? 'support') : 'support'
+  )
+  const [form, setForm] = useState<Omit<Agent, 'id' | 'knowledge' | 'published' | 'createdAt'>>(
+    editAgent
+      ? { name: editAgent.name, type: editAgent.type, description: editAgent.description, tone: editAgent.tone, voice: editAgent.voice, goal: editAgent.goal, greeting: editAgent.greeting, fallback: editAgent.fallback }
+      : {
+          name: '',
+          type: 'Support Agent',
+          description: '',
+          tone: 'Professional',
+          voice: 'en-US',
+          goal: '',
+          greeting: 'Hi! How can I help you today?',
+          fallback: "I'm not sure about that. Please contact our support team.",
+        }
+  )
+  const [knowledge, setKnowledge] = useState<KnowledgeItem[]>(editAgent ? editAgent.knowledge : [])
   const [faqText, setFaqText] = useState('')
   const [isDragging, setIsDragging] = useState(false)
 
   // Generate a stable agent ID and creation timestamp so preview and saved agent match
-  const agentId = useMemo(() => makeId(), [])
-  const createdAt = useMemo(() => Date.now(), [])
+  const agentId = useMemo(() => editAgent?.id ?? makeId(), [editAgent?.id])
+  const createdAt = useMemo(() => editAgent?.createdAt ?? Date.now(), [editAgent?.createdAt])
 
   const builtAgent: Agent = {
     id: agentId,
@@ -142,8 +149,12 @@ export function Builder({ onNavigate }: BuilderProps) {
   }
 
   const handleSave = () => {
-    const agent: Agent = builtAgent
-    dispatch({ type: 'CREATE_AGENT', agent })
+    const agent: Agent = { ...builtAgent, published: editAgent?.published ?? false }
+    if (editAgent) {
+      dispatch({ type: 'UPDATE_AGENT', agent })
+    } else {
+      dispatch({ type: 'CREATE_AGENT', agent })
+    }
     onNavigate('test')
   }
 
@@ -164,6 +175,12 @@ export function Builder({ onNavigate }: BuilderProps) {
     >
       {/* Main area */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        {editAgent && (
+          <motion.div variants={itemVariants} style={{ background: 'var(--accent-dim)', border: '1px solid var(--border-accent)', borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
+            Editing: {editAgent.name}
+          </motion.div>
+        )}
+
         {/* Step progress */}
         <motion.div variants={itemVariants} style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
           {STEPS.map((s, i) => (
@@ -544,7 +561,7 @@ export function Builder({ onNavigate }: BuilderProps) {
             ) : (
               <Button variant="primary" onClick={handleSave}>
                 <Save size={16} />
-                Save & Test
+                {editAgent ? 'Save Changes' : 'Save & Test'}
               </Button>
             )}
           </div>

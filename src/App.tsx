@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AppProvider } from './lib/store'
+import { AppProvider, useApp } from './lib/store'
 import { Sidebar } from './components/layout/Sidebar'
 import { Topbar } from './components/layout/Topbar'
 import { Dashboard } from './pages/Dashboard'
@@ -21,30 +21,37 @@ const pageVariants = {
 const pageTransition = { duration: 0.25 }
 
 function AppInner() {
+  const { state } = useApp()
   const [route, setRoute] = useState<Route>('dashboard')
-  // Tracks whether the user has an active conversation on the Test page
-  // so the FloatingAssistant suppresses nudges while they're chatting
+  const [editAgentId, setEditAgentId] = useState<string | null>(null)
   const [testPageHasMessages, setTestPageHasMessages] = useState(false)
 
   const navigate = (r: Route) => setRoute(r)
 
+  const handleEditAgent = (agentId: string) => {
+    setEditAgentId(agentId)
+    setRoute('builder')
+  }
+
+  const editAgent = editAgentId ? state.agents.find(a => a.id === editAgentId) : undefined
+
   return (
     <div style={{ display: 'flex', flexDirection: 'row', minHeight: '100svh', width: '100%', background: 'var(--bg, #0a0c12)', color: 'var(--text, #f0f2f5)' }}>
-      <Sidebar route={route} onNavigate={navigate} />
+      <Sidebar route={route} onNavigate={r => { navigate(r); if (r === 'builder') setEditAgentId(null) }} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <Topbar route={route} onNavigate={navigate} />
         <main style={{ flex: 1, overflowY: 'auto', padding: '28px' }}>
           <AnimatePresence mode="wait">
             <motion.div
-              key={route}
+              key={route + (editAgentId ?? '')}
               variants={pageVariants}
               initial="initial"
               animate="animate"
               exit="exit"
               transition={pageTransition}
             >
-              {route === 'dashboard' && <Dashboard onNavigate={navigate} />}
-              {route === 'builder' && <Builder onNavigate={navigate} />}
+              {route === 'dashboard' && <Dashboard onNavigate={navigate} onEditAgent={handleEditAgent} />}
+              {route === 'builder' && <Builder onNavigate={r => { setEditAgentId(null); navigate(r) }} editAgent={editAgent} />}
               {route === 'test' && <Test onHasMessagesChange={setTestPageHasMessages} />}
               {route === 'publish' && <Publish />}
               {route === 'analytics' && <Analytics />}

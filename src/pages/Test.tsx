@@ -138,6 +138,7 @@ export function Test({ onHasMessagesChange }: TestProps) {
   const [quickActions, setQuickActions] = useState<string[]>(
     AGENT_DEFAULT_QUICK_ACTIONS[activeAgent?.type ?? ''] ?? FALLBACK_QUICK_ACTIONS
   )
+  const [quickActionsLoading, setQuickActionsLoading] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const voiceEnabledRef = useRef(true)
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null)
@@ -263,6 +264,60 @@ export function Test({ onHasMessagesChange }: TestProps) {
     onHasMessagesChange?.(conv.messages.length > 0)
   }, [conv.messages.length, onHasMessagesChange])
 
+  // Generate context-aware initial quick actions from agent name/goal/knowledge
+  useEffect(() => {
+    if (!activeAgent) { setQuickActions(FALLBACK_QUICK_ACTIONS); return }
+    // Show type defaults immediately while generating
+    setQuickActions(AGENT_DEFAULT_QUICK_ACTIONS[activeAgent.type] ?? FALLBACK_QUICK_ACTIONS)
+    setQuickActionsLoading(true)
+    const kbTitles = activeAgent.knowledge.filter(k => k.status === 'ready').map(k => k.title).join(', ')
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: `Agent: "${activeAgent.name}" (${activeAgent.type})\nGoal: ${activeAgent.goal || 'Help users'}\nDescription: ${activeAgent.description || 'A helpful AI assistant'}\nKnowledge base: ${kbTitles || 'general knowledge'}\n\nSuggest exactly 3 short questions (max 7 words each) a real user would typically ask this specific agent first. Return ONLY a JSON array: ["Q1?","Q2?","Q3?"]`,
+        systemPrompt: 'Generate 3 realistic opening questions for the described AI agent. Return ONLY a valid JSON array of exactly 3 short question strings. No extra text.',
+        agentName: 'QuickActionGenerator',
+        priorMessageCount: 0,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.answer) return
+        const m = data.answer.match(/\[[\s\S]*?\]/)
+        if (!m) return
+        const parsed = JSON.parse(m[0])
+        if (Array.isArray(parsed) && parsed.length >= 3) {
+          setQuickActions(parsed.slice(0, 3).map(String))
+        }
+      })
+      .catch(() => { /* keep type defaults */ })
+      .finally(() => setQuickActionsLoading(false))
+  }, [activeAgent?.id])
+
+  // Load chat history from localStorage when agent changes
+  useEffect(() => {
+    if (!activeAgent) return
+    try {
+      const raw = localStorage.getItem(`aira-history-${activeAgent.id}`)
+      if (raw) {
+        const msgs = JSON.parse(raw) as Message[]
+        if (Array.isArray(msgs) && msgs.length > 0) {
+          setConv(prev => ({ ...prev, messages: msgs }))
+          setModelStatus('ready')
+        }
+      }
+    } catch { /* ignore */ }
+  }, [activeAgent?.id])
+
+  // Persist chat history to localStorage after every message
+  useEffect(() => {
+    if (!activeAgent || conv.messages.length === 0) return
+    try {
+      localStorage.setItem(`aira-history-${activeAgent.id}`, JSON.stringify(conv.messages))
+    } catch { /* ignore */ }
+  }, [conv.messages, activeAgent?.id])
+
   // Track active heading from streaming content (ATX ## and setext underline styles)
   useEffect(() => {
     if (streamingContent) {
@@ -374,6 +429,9 @@ export function Test({ onHasMessagesChange }: TestProps) {
     setConv({ id: makeId(), messages: [], lastConfidence: 0, lastSources: [] })
     setModelStatus('waiting')
     setFeedback(null)
+    if (activeAgent) {
+      localStorage.removeItem(`aira-history-${activeAgent.id}`)
+    }
     setQuickActions(AGENT_DEFAULT_QUICK_ACTIONS[activeAgent?.type ?? ''] ?? FALLBACK_QUICK_ACTIONS)
   }
 
@@ -570,24 +628,34 @@ export function Test({ onHasMessagesChange }: TestProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Dynamic quick action buttons — seeded from agent type, updated after each response */}
-        <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-          <AnimatePresence mode="popLayout">
-            {quickActions.map(t => (
-              <motion.button
-                key={t}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.18 }}
-                onClick={() => sendMessage(t)}
-                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', fontSize: 11, color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 500 }}
-              >
-                {t}
-              </motion.button>
-            ))}
-          </AnimatePresence>
+        {/* Dynamic quick action buttons — generated from agent context, updated after each response */}
+        <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', alignItems: 'center' }}>
+          {quickActionsLoading
+            ? [1, 2, 3].map(i => (
+                <motion.div key={i} animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.15 }}
+                  style={{ height: 27, width: 90 + i * 20, background: 'var(--surface-2)', borderRadius: 6, border: '1px solid var(--border)' }}
+                />
+              ))
+            : (
+              <AnimatePresence mode="popLayout">
+                {quickActions.map(t => (
+                  <motion.button
+                    key={t}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.18 }}
+                    onClick={() => sendMessage(t)}
+                    disabled={isTyping}
+                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', fontSize: 11, color: 'var(--text-muted)', cursor: isTyping ? 'default' : 'pointer', fontWeight: 500 }}
+                  >
+                    {t}
+                  </motion.button>
+                ))}
+              </AnimatePresence>
+            )
+          }
         </div>
 
         {/* Input form */}

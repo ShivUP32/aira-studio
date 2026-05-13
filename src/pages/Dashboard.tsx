@@ -11,6 +11,7 @@ import type { Route } from '../App'
 
 interface DashboardProps {
   onNavigate: (route: Route) => void
+  onEditAgent?: (agentId: string) => void
 }
 
 const containerVariants = {
@@ -94,7 +95,7 @@ const demoFlow = [
   'Hit Publish → copy embed snippet',
 ]
 
-export function Dashboard({ onNavigate }: DashboardProps) {
+export function Dashboard({ onNavigate, onEditAgent }: DashboardProps) {
   const { state } = useApp()
   const activeAgent = state.agents.find(a => a.id === state.activeAgentId)
 
@@ -351,9 +352,20 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                     {agent.type} · {agent.knowledge.length} source{agent.knowledge.length !== 1 ? 's' : ''}
                   </div>
                 </div>
-                <Badge variant={agent.published ? 'live' : 'draft'}>
-                  {agent.published ? 'Live' : 'Draft'}
-                </Badge>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Badge variant={agent.published ? 'live' : 'draft'}>
+                    {agent.published ? 'Live' : 'Draft'}
+                  </Badge>
+                  <button
+                    onClick={() => onEditAgent?.(agent.id)}
+                    title="Edit agent"
+                    style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 500, transition: 'color 0.15s, border-color 0.15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)' }}
+                  >
+                    Edit
+                  </button>
+                </div>
               </div>
             ))}
             {state.agents.length === 0 && (
