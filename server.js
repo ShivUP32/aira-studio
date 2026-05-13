@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const chatHandler = require('./api/chat.js')
+const chatHandler = require('./api/chat.cjs')
 
 const app = express()
 app.use(express.json())
