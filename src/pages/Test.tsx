@@ -112,6 +112,7 @@ export function Test() {
   const [modelStatus, setModelStatus] = useState<'waiting' | 'thinking' | 'ready'>('waiting')
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const voiceEnabledRef = useRef(true)
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null)
   const [streamingContent, setStreamingContent] = useState('')
   const [activeHeading, setActiveHeading] = useState<string | null>(null)
@@ -153,15 +154,37 @@ export function Test() {
     return () => window.speechSynthesis.removeEventListener('voiceschanged', pickBestVoice)
   }, [])
 
-  // Strip markdown symbols so TTS doesn't read "hashtag" or "asterisk"
-  // Insert pause at headings by prepending ". " before heading text
+  // Convert markdown to speakable plain text.
+  // Each transformation reflects what the symbol *means* so TTS conveys structure without reading symbols.
   const stripMarkdown = (text: string) =>
     text
-      .replace(/^#{1,3}\s+(.+)$/gm, '. $1')
+      // Visual separators (===== or -----) → brief pause, never read as words
+      .replace(/^[=\-]{4,}\s*$/gm, '. ')
+      // Headings → pause before, read title, pause after
+      .replace(/^#{1,3}\s+(.+)$/gm, '. $1. ')
+      // Fenced code blocks → skip entirely (not speakable)
+      .replace(/```[\s\S]*?```/g, '')
+      // Inline code → just read the content without backticks
+      .replace(/`([^`]+)`/g, '$1')
+      // Bold / italic → read the word, drop symbols
       .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      // Blockquotes → read content (> means "quoted text", not a symbol)
+      .replace(/^>\s+/gm, '')
+      // Numbered lists → content only (number already implied by sequence)
+      .replace(/^\d+\.\s+/gm, '')
+      // Bullet points → content only
       .replace(/^[-*]\s+/gm, '')
+      // Markdown links → read the label, drop the URL
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      // Table pipes → short pause between cells
+      .replace(/\|/g, ', ')
+      // Collapse blank lines into sentence pause
       .replace(/\n{2,}/g, '. ')
       .replace(/\n/g, ' ')
+      // Collapse accidental double spaces/dots
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\.\s*\./g, '.')
       .trim()
 
   const speak = (text: string) => {
@@ -177,7 +200,11 @@ export function Test() {
 
     setStreamingContent('')
 
-    if (voiceEnabled) {
+    // Read voiceEnabledRef so we always get the current toggle state,
+    // even if the user toggled while an API call was in-flight.
+    const useVoice = voiceEnabledRef.current
+
+    if (useVoice) {
       const utt = new SpeechSynthesisUtterance(clean)
       if (selectedVoiceRef.current) utt.voice = selectedVoiceRef.current
       utt.rate = 1.0
@@ -195,7 +222,7 @@ export function Test() {
         clearInterval(interval)
         setStreamingContent(text)
       }
-    }, voiceEnabled ? msPerWord : 280)
+    }, useVoice ? msPerWord : 280)
   }
 
   useEffect(() => {
@@ -359,7 +386,7 @@ export function Test() {
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
-              onClick={() => { setVoiceEnabled(v => !v); window.speechSynthesis?.cancel() }}
+              onClick={() => { setVoiceEnabled(v => { voiceEnabledRef.current = !v; return !v }); window.speechSynthesis?.cancel() }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: voiceEnabled ? 'var(--accent)' : 'var(--text-muted)', padding: 6, borderRadius: 6 }}
               title={voiceEnabled ? 'Voice on — click to mute' : 'Voice off — click to enable'}
             >
