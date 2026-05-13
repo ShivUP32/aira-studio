@@ -132,7 +132,7 @@ interface TestProps {
 }
 
 export function Test({ onHasMessagesChange }: TestProps) {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const activeAgent = state.agents.find(a => a.id === state.activeAgentId)
   const [conv, setConv] = useState<ActiveConversation>({
     id: makeId(),
@@ -411,6 +411,7 @@ export function Test({ onHasMessagesChange }: TestProps) {
         body: JSON.stringify({
           question: text.trim(),
           systemPrompt,
+          agentId: activeAgent?.id ?? '',
           agentName: activeAgent?.name ?? 'Aira Agent',
           priorMessageCount: conv.messages.filter(m => m.role === 'assistant').length,
           // Pass last 8 messages so the LLM has full conversation context.
@@ -449,6 +450,17 @@ export function Test({ onHasMessagesChange }: TestProps) {
         lastConfidence: confidence,
         lastSources: [],
       }))
+      dispatch({
+        type: 'ADD_CONVERSATION',
+        conversation: {
+          id: makeId(),
+          agentId: activeAgent?.id ?? '',
+          userQuery: text.trim(),
+          assistantAnswer: answer,
+          confidence,
+          timestamp: Date.now(),
+        },
+      })
       speak(answer)
       generateFollowUps(answer)
       setIsTyping(false)

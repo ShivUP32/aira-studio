@@ -5,6 +5,26 @@ const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models
 const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
+async function saveToSupabase({ agentId, agentName, userQuery, assistantAnswer, confidence }) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return;
+  try {
+    await fetch(`${url}/rest/v1/conversations`, {
+      method: "POST",
+      headers: {
+        "apikey": key,
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+      },
+      body: JSON.stringify({ agent_id: agentId, agent_name: agentName, user_query: userQuery, assistant_answer: assistantAnswer, confidence }),
+    });
+  } catch {
+    // non-blocking — don't fail the response if Supabase is unavailable
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -27,6 +47,7 @@ export default async function handler(req, res) {
       systemPrompt,
       context,
       sources = [],
+      agentId = "",
       agentName = "Aira Agent",
       priorMessageCount = 0,
       conversationHistory = [],
@@ -42,10 +63,16 @@ export default async function handler(req, res) {
     const payload = { question, systemPrompt, context, sources, agentName, priorMessageCount, conversationHistory };
 
     const groqResult = await callGroq(payload);
-    if (groqResult.ok) return res.status(200).json({ answer: groqResult.answer, provider: "groq", model: groqResult.model });
+    if (groqResult.ok) {
+      saveToSupabase({ agentId, agentName, userQuery: question, assistantAnswer: groqResult.answer, confidence: 0.85 });
+      return res.status(200).json({ answer: groqResult.answer, provider: "groq", model: groqResult.model });
+    }
 
     const geminiResult = await callGemini(payload);
-    if (geminiResult.ok) return res.status(200).json({ answer: geminiResult.answer, provider: "gemini", model: geminiResult.model, fallbackFrom: "groq" });
+    if (geminiResult.ok) {
+      saveToSupabase({ agentId, agentName, userQuery: question, assistantAnswer: geminiResult.answer, confidence: 0.85 });
+      return res.status(200).json({ answer: geminiResult.answer, provider: "gemini", model: geminiResult.model, fallbackFrom: "groq" });
+    }
 
     return res.status(502).json({ error: "LLM providers unavailable", groqError: groqResult.error, geminiError: geminiResult.error });
   } catch (error) {
