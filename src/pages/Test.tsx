@@ -155,6 +155,7 @@ export function Test({ onHasMessagesChange }: TestProps) {
   const [activeHeading, setActiveHeading] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null)
+  const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Priority list — best to worst. Natural/Neural voices sound human, avoid robotic ones.
   const VOICE_PRIORITY = [
@@ -240,6 +241,12 @@ export function Test({ onHasMessagesChange }: TestProps) {
     // proportionally so original (longer) text finishes at same time.
     const msPerWord = Math.round(1000 / (2.4 * (textWords.length / cleanWordCount)))
 
+    // Cancel any previous streaming interval before starting a new one —
+    // without this the old interval keeps firing and causes flickering.
+    if (streamingIntervalRef.current) {
+      clearInterval(streamingIntervalRef.current)
+      streamingIntervalRef.current = null
+    }
     setStreamingContent('')
 
     // Read ref — always reflects current toggle, even when called from a stale closure.
@@ -267,11 +274,12 @@ export function Test({ onHasMessagesChange }: TestProps) {
 
     // Timer-based streaming — reliable on all browsers unlike onboundary
     let wordIdx = 0
-    const interval = setInterval(() => {
+    streamingIntervalRef.current = setInterval(() => {
       wordIdx++
       setStreamingContent(textWords.slice(0, wordIdx).join(' '))
       if (wordIdx >= textWords.length) {
-        clearInterval(interval)
+        clearInterval(streamingIntervalRef.current!)
+        streamingIntervalRef.current = null
         setStreamingContent(text)
       }
     }, useVoice ? msPerWord : 280)
