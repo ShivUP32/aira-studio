@@ -62,14 +62,20 @@ function renderInline(text: string): React.ReactNode {
   )
 }
 
-function MarkdownText({ content }: { content: string }) {
+function MarkdownText({ content, activeHeading }: { content: string; activeHeading?: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {content.split('\n').map((line, i) => {
-        if (line.startsWith('## '))
-          return <div key={i} style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 6, marginBottom: 2 }}>{renderInline(line.slice(3))}</div>
-        if (line.startsWith('# '))
-          return <div key={i} style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', marginTop: 6, marginBottom: 2 }}>{renderInline(line.slice(2))}</div>
+        if (line.startsWith('## ')) {
+          const headingText = line.slice(3)
+          const isActive = activeHeading && headingText === activeHeading
+          return <div key={i} style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent)', marginTop: 6, marginBottom: 2, borderLeft: '2px solid var(--accent)', paddingLeft: 8, background: isActive ? 'var(--accent-dim)' : 'transparent', borderRadius: isActive ? 4 : 0 }}>{renderInline(headingText)}</div>
+        }
+        if (line.startsWith('# ')) {
+          const headingText = line.slice(2)
+          const isActive = activeHeading && headingText === activeHeading
+          return <div key={i} style={{ fontWeight: 800, fontSize: 15, color: 'var(--accent)', marginTop: 6, marginBottom: 2, borderLeft: '2px solid var(--accent)', paddingLeft: 8, background: isActive ? 'var(--accent-dim)' : 'transparent', borderRadius: isActive ? 4 : 0 }}>{renderInline(headingText)}</div>
+        }
         if (line.startsWith('- '))
           return <div key={i} style={{ display: 'flex', gap: 7, paddingLeft: 4 }}><span style={{ color: 'var(--accent)', flexShrink: 0 }}>•</span><span>{renderInline(line.slice(2))}</span></div>
         if (line === '')
@@ -80,8 +86,8 @@ function MarkdownText({ content }: { content: string }) {
   )
 }
 
-function StreamingText({ content, isStreaming, streamingContent }: { content: string; isStreaming: boolean; streamingContent: string }) {
-  return <MarkdownText content={isStreaming ? streamingContent : content} />
+function StreamingText({ content, isStreaming, streamingContent, activeHeading }: { content: string; isStreaming: boolean; streamingContent: string; activeHeading?: string }) {
+  return <MarkdownText content={isStreaming ? streamingContent : content} activeHeading={activeHeading} />
 }
 
 const containerVariants = {
@@ -108,6 +114,7 @@ export function Test() {
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null)
   const [streamingContent, setStreamingContent] = useState('')
+  const [activeHeading, setActiveHeading] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null)
 
@@ -147,9 +154,10 @@ export function Test() {
   }, [])
 
   // Strip markdown symbols so TTS doesn't read "hashtag" or "asterisk"
+  // Insert pause at headings by prepending ". " before heading text
   const stripMarkdown = (text: string) =>
     text
-      .replace(/^#{1,3}\s+/gm, '')
+      .replace(/^#{1,3}\s+(.+)$/gm, '. $1')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/^[-*]\s+/gm, '')
       .replace(/\n{2,}/g, '. ')
@@ -193,6 +201,22 @@ export function Test() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [conv.messages, isTyping])
+
+  // Track active heading from streaming content
+  useEffect(() => {
+    if (streamingContent) {
+      const lines = streamingContent.split('\n')
+      let lastHeading: string | null = null
+      for (const line of lines) {
+        if (line.startsWith('## ')) {
+          lastHeading = line.slice(3)
+        } else if (line.startsWith('# ')) {
+          lastHeading = line.slice(2)
+        }
+      }
+      setActiveHeading(lastHeading)
+    }
+  }, [streamingContent])
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isTyping) return
@@ -431,7 +455,7 @@ export function Test() {
                 >
                   {msg.role === 'user'
                     ? msg.content
-                    : <StreamingText content={msg.content} isStreaming={msg.id === streamingMsgId} streamingContent={streamingContent} />
+                    : <StreamingText content={msg.content} isStreaming={msg.id === streamingMsgId} streamingContent={streamingContent} activeHeading={msg.id === streamingMsgId ? activeHeading || undefined : undefined} />
                   }
                 </div>
                 {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
