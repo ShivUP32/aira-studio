@@ -62,28 +62,73 @@ function renderInline(text: string): React.ReactNode {
   )
 }
 
+const HEADING_STYLE = (active: boolean, large?: boolean): React.CSSProperties => ({
+  fontWeight: large ? 800 : 700,
+  fontSize: large ? 15 : 14,
+  color: 'var(--accent)',
+  marginTop: 6,
+  marginBottom: 2,
+  borderLeft: '2px solid var(--accent)',
+  paddingLeft: 8,
+  background: active ? 'var(--accent-dim)' : 'transparent',
+  borderRadius: active ? 4 : 0,
+})
+
 function MarkdownText({ content, activeHeading }: { content: string; activeHeading?: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {content.split('\n').map((line, i) => {
-        if (line.startsWith('## ')) {
-          const headingText = line.slice(3)
-          const isActive = activeHeading && headingText === activeHeading
-          return <div key={i} style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent)', marginTop: 6, marginBottom: 2, borderLeft: '2px solid var(--accent)', paddingLeft: 8, background: isActive ? 'var(--accent-dim)' : 'transparent', borderRadius: isActive ? 4 : 0 }}>{renderInline(headingText)}</div>
-        }
-        if (line.startsWith('# ')) {
-          const headingText = line.slice(2)
-          const isActive = activeHeading && headingText === activeHeading
-          return <div key={i} style={{ fontWeight: 800, fontSize: 15, color: 'var(--accent)', marginTop: 6, marginBottom: 2, borderLeft: '2px solid var(--accent)', paddingLeft: 8, background: isActive ? 'var(--accent-dim)' : 'transparent', borderRadius: isActive ? 4 : 0 }}>{renderInline(headingText)}</div>
-        }
-        if (line.startsWith('- '))
-          return <div key={i} style={{ display: 'flex', gap: 7, paddingLeft: 4 }}><span style={{ color: 'var(--accent)', flexShrink: 0 }}>•</span><span>{renderInline(line.slice(2))}</span></div>
-        if (line === '')
-          return <div key={i} style={{ height: 4 }} />
-        return <div key={i}>{renderInline(line)}</div>
-      })}
-    </div>
-  )
+  const lines = content.split('\n')
+  const elements: React.ReactNode[] = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    const next = lines[i + 1] ?? ''
+
+    // Setext headings: text line followed by === (h1) or --- (h2) underline
+    if (line.trim() && /^={3,}\s*$/.test(next)) {
+      const text = line.replace(/^\*\*(.+)\*\*$/, '$1') // strip wrapping bold if present
+      const active = !!(activeHeading && text === activeHeading)
+      elements.push(<div key={i} style={HEADING_STYLE(active, true)}>{renderInline(text)}</div>)
+      i += 2; continue
+    }
+    if (line.trim() && /^-{3,}\s*$/.test(next)) {
+      const text = line.replace(/^\*\*(.+)\*\*$/, '$1')
+      const active = !!(activeHeading && text === activeHeading)
+      elements.push(<div key={i} style={HEADING_STYLE(active)}>{renderInline(text)}</div>)
+      i += 2; continue
+    }
+
+    // Standalone separator lines — skip (never render)
+    if (/^[=\-]{4,}\s*$/.test(line)) { i++; continue }
+
+    // ATX headings (## style)
+    if (line.startsWith('## ')) {
+      const text = line.slice(3)
+      const active = !!(activeHeading && text === activeHeading)
+      elements.push(<div key={i} style={HEADING_STYLE(active)}>{renderInline(text)}</div>)
+      i++; continue
+    }
+    if (line.startsWith('# ')) {
+      const text = line.slice(2)
+      const active = !!(activeHeading && text === activeHeading)
+      elements.push(<div key={i} style={HEADING_STYLE(active, true)}>{renderInline(text)}</div>)
+      i++; continue
+    }
+
+    // Bullets: - or *
+    if (/^[-*] /.test(line)) {
+      elements.push(
+        <div key={i} style={{ display: 'flex', gap: 7, paddingLeft: 4 }}>
+          <span style={{ color: 'var(--accent)', flexShrink: 0 }}>•</span>
+          <span>{renderInline(line.slice(2))}</span>
+        </div>
+      )
+      i++; continue
+    }
+
+    if (line === '') { elements.push(<div key={i} style={{ height: 4 }} />); i++; continue }
+    elements.push(<div key={i}>{renderInline(line)}</div>)
+    i++
+  }
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{elements}</div>
 }
 
 function StreamingText({ content, isStreaming, streamingContent, activeHeading }: { content: string; isStreaming: boolean; streamingContent: string; activeHeading?: string }) {
@@ -158,9 +203,12 @@ export function Test() {
   // Each transformation reflects what the symbol *means* so TTS conveys structure without reading symbols.
   const stripMarkdown = (text: string) =>
     text
-      // Visual separators (===== or -----) → brief pause, never read as words
+      // Setext headings: text\n===== or text\n----- → pause, read title, pause; then drop underline
+      .replace(/^(.+)\n={3,}\s*$/gm, '. $1. ')
+      .replace(/^(.+)\n-{3,}\s*$/gm, '. $1. ')
+      // Remaining standalone separators (===== or -----) → brief pause
       .replace(/^[=\-]{4,}\s*$/gm, '. ')
-      // Headings → pause before, read title, pause after
+      // ATX headings (## style) → pause before, read title, pause after
       .replace(/^#{1,3}\s+(.+)$/gm, '. $1. ')
       // Fenced code blocks → skip entirely (not speakable)
       .replace(/```[\s\S]*?```/g, '')
@@ -229,13 +277,17 @@ export function Test() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [conv.messages, isTyping])
 
-  // Track active heading from streaming content
+  // Track active heading from streaming content (ATX ## and setext underline styles)
   useEffect(() => {
     if (streamingContent) {
       const lines = streamingContent.split('\n')
       let lastHeading: string | null = null
-      for (const line of lines) {
-        if (line.startsWith('## ')) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        const next = lines[i + 1] ?? ''
+        if (line.trim() && /^[=\-]{3,}\s*$/.test(next)) {
+          lastHeading = line.replace(/^\*\*(.+)\*\*$/, '$1')
+        } else if (line.startsWith('## ')) {
           lastHeading = line.slice(3)
         } else if (line.startsWith('# ')) {
           lastHeading = line.slice(2)
