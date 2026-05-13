@@ -419,9 +419,20 @@ export function Test({ onHasMessagesChange }: TestProps) {
         }),
       })
 
-      const data = await res.json()
-      const answer = res.ok ? (data.answer ?? 'No response received.') : `Error: ${data.error ?? 'Unknown error'}`
-      const confidence = res.ok ? 0.85 : 0
+      let data: Record<string, unknown> = {}
+      try { data = await res.json() } catch { /* non-JSON response — treat as server error */ }
+
+      if (!res.ok) {
+        const errMsg = (data.error as string) ?? `Server error (${res.status})`
+        const assistantMsg: Message = { id: makeId(), role: 'assistant', content: `Sorry, I couldn't get a response. ${errMsg}`, confidence: 0, sources: [] }
+        setConv(prev => ({ ...prev, messages: [...prev.messages, assistantMsg], lastConfidence: 0, lastSources: [] }))
+        setIsTyping(false)
+        setModelStatus('ready')
+        return
+      }
+
+      const answer = (data.answer as string) ?? 'No response received.'
+      const confidence = 0.85
 
       const assistantMsg: Message = {
         id: makeId(),
@@ -445,7 +456,10 @@ export function Test({ onHasMessagesChange }: TestProps) {
       setFeedback(null)
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Failed to reach the API.'
-      const assistantMsg: Message = { id: makeId(), role: 'assistant', content: `Error: ${errMsg}`, confidence: 0, sources: [] }
+      const friendlyMsg = errMsg.includes('fetch') || errMsg.includes('network')
+        ? 'Could not reach the API server. Make sure it is running on port 3003.'
+        : `Something went wrong: ${errMsg}`
+      const assistantMsg: Message = { id: makeId(), role: 'assistant', content: friendlyMsg, confidence: 0, sources: [] }
       setConv(prev => ({ ...prev, messages: [...prev.messages, assistantMsg] }))
       setIsTyping(false)
       setModelStatus('ready')
