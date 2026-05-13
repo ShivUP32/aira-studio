@@ -5,7 +5,7 @@ const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models
 const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-aira-key");
@@ -29,7 +29,6 @@ module.exports = async function handler(req, res) {
       sources = [],
       agentName = "Aira Agent",
       priorMessageCount = 0,
-      // Array of {role:'user'|'assistant', content:string} — last N exchanges for context
       conversationHistory = [],
     } = req.body || {};
 
@@ -52,7 +51,7 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message || "Unexpected chat error" });
   }
-};
+}
 
 function buildSystemContent({ systemPrompt, agentName, priorMessageCount, context, sources }) {
   const sourceList = sources.map((s, i) => `${i + 1}. ${s.title}: ${s.preview}`).join("\n");
@@ -85,8 +84,6 @@ async function callGroq({ systemPrompt, conversationHistory, question, agentName
   const model = process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL;
   if (!apiKey) return { ok: false, error: "GROQ_API_KEY is not configured" };
 
-  // Use proper multi-turn messages so Groq has full conversation context.
-  // Cap at last 8 messages (~4 exchanges) to stay within token limits.
   const history = (conversationHistory || [])
     .slice(-8)
     .map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
@@ -120,7 +117,6 @@ async function callGemini({ systemPrompt, conversationHistory, question, agentNa
   const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
   if (!apiKey) return { ok: false, error: "GEMINI_API_KEY is not configured" };
 
-  // Gemini requires alternating user/model turns
   const history = (conversationHistory || [])
     .slice(-8)
     .map(m => ({
