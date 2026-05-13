@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import type { Conversation } from '../lib/store'
-import { supabase } from '../lib/supabase'
 
 const containerVariants = {
   animate: { transition: { staggerChildren: 0.06 } },
@@ -125,16 +124,24 @@ export function Analytics() {
   const [remoteConvs, setRemoteConvs] = useState<Conversation[] | null>(null)
 
   useEffect(() => {
-    if (!state.activeAgentId) return
-    supabase
-      .from('conversations')
-      .select('agent_id,user_query,assistant_answer,confidence,created_at')
-      .eq('agent_id', state.activeAgentId)
-      .order('created_at', { ascending: false })
-      .limit(500)
-      .then(({ data, error }) => {
-        if (error || !data) return
-        setRemoteConvs(data.map(r => ({
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+    if (!supabaseUrl || !supabaseKey || !state.activeAgentId) return
+
+    const params = new URLSearchParams({
+      agent_id: `eq.${state.activeAgentId}`,
+      order: 'created_at.desc',
+      limit: '500',
+      select: 'agent_id,user_query,assistant_answer,confidence,created_at',
+    })
+
+    fetch(`${supabaseUrl}/rest/v1/conversations?${params}`, {
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+    })
+      .then(r => r.json())
+      .then((rows: Array<{ agent_id: string; user_query: string; assistant_answer: string; confidence: number; created_at: string }>) => {
+        if (!Array.isArray(rows)) return
+        setRemoteConvs(rows.map(r => ({
           id: r.created_at,
           agentId: r.agent_id,
           userQuery: r.user_query,
@@ -143,6 +150,7 @@ export function Analytics() {
           timestamp: new Date(r.created_at).getTime(),
         })))
       })
+      .catch(() => { /* keep localStorage fallback */ })
   }, [state.activeAgentId])
 
   // Merge remote + local, deduplicate by userQuery+timestamp proximity
