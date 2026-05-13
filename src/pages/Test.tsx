@@ -413,6 +413,9 @@ export function Test({ onHasMessagesChange }: TestProps) {
           systemPrompt,
           agentName: activeAgent?.name ?? 'Aira Agent',
           priorMessageCount: conv.messages.filter(m => m.role === 'assistant').length,
+          // Pass last 8 messages so the LLM has full conversation context.
+          // Quick actions like "Quiz Time" will automatically resolve to the current topic.
+          conversationHistory: conv.messages.slice(-8).map(m => ({ role: m.role, content: m.content })),
         }),
       })
 
