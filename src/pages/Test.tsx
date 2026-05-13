@@ -231,7 +231,7 @@ export function Test({ onHasMessagesChange }: TestProps) {
 
   const speak = (text: string) => {
     if (!window.speechSynthesis) return
-    window.speechSynthesis.cancel()
+
     const clean = stripMarkdown(text)
     const textWords = text.split(' ').filter(Boolean)
     const cleanWordCount = Math.max(clean.split(/\s+/).filter(Boolean).length, 1)
@@ -242,19 +242,27 @@ export function Test({ onHasMessagesChange }: TestProps) {
 
     setStreamingContent('')
 
-    // Read voiceEnabledRef so we always get the current toggle state,
-    // even if the user toggled while an API call was in-flight.
+    // Read ref — always reflects current toggle, even when called from a stale closure.
     const useVoice = voiceEnabledRef.current
 
     if (useVoice) {
-      // Resume in case Chrome suspended synthesis in the background
-      if (window.speechSynthesis.paused) window.speechSynthesis.resume()
+      // Cancel must be inside the voice block — calling cancel() when we never
+      // called speak() is harmless, but Chrome's cancel() is async internally.
+      // Calling cancel() then immediately speak() causes Chrome to silently drop
+      // the utterance. The setTimeout gives Chrome one tick to flush the cancel.
+      window.speechSynthesis.cancel()
+      if (!selectedVoiceRef.current) pickBestVoice()
       const utt = new SpeechSynthesisUtterance(clean)
       if (selectedVoiceRef.current) utt.voice = selectedVoiceRef.current
       utt.rate = 1.0
       utt.pitch = 1.0
       utt.onend = () => setStreamingContent(text)
-      window.speechSynthesis.speak(utt)
+      setTimeout(() => {
+        // Re-check ref in case user toggled off during the delay
+        if (!voiceEnabledRef.current) return
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume()
+        window.speechSynthesis.speak(utt)
+      }, 120)
     }
 
     // Timer-based streaming — reliable on all browsers unlike onboundary
