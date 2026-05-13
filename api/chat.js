@@ -8,9 +8,9 @@ const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 async function saveToSupabase({ agentId, agentName, userQuery, assistantAnswer, confidence }) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;
-  if (!url || !key) return;
+  if (!url || !key) { console.warn("[supabase] missing SUPABASE_URL or SUPABASE_ANON_KEY"); return; }
   try {
-    await fetch(`${url}/rest/v1/conversations`, {
+    const res = await fetch(`${url}/rest/v1/conversations`, {
       method: "POST",
       headers: {
         "apikey": key,
@@ -20,8 +20,12 @@ async function saveToSupabase({ agentId, agentName, userQuery, assistantAnswer, 
       },
       body: JSON.stringify({ agent_id: agentId, agent_name: agentName, user_query: userQuery, assistant_answer: assistantAnswer, confidence }),
     });
-  } catch {
-    // non-blocking — don't fail the response if Supabase is unavailable
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("[supabase] insert failed", res.status, body);
+    }
+  } catch (err) {
+    console.error("[supabase] fetch error", err.message);
   }
 }
 
