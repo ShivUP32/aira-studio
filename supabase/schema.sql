@@ -47,7 +47,7 @@ create table public.knowledge_chunks (
 );
 
 create index knowledge_chunks_agent_idx on public.knowledge_chunks(agent_id);
-create index knowledge_chunks_embedding_idx on public.knowledge_chunks using ivfflat (embedding vector_cosine_ops);
+create index knowledge_chunks_embedding_idx on public.knowledge_chunks using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 
 create table public.conversations (
   id uuid primary key default gen_random_uuid(),

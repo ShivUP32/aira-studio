@@ -41,23 +41,7 @@ export function Sidebar({ route, onNavigate }: SidebarProps) {
       {/* Brand */}
       <div style={{ padding: '24px 20px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 8,
-              background: 'var(--accent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 900,
-              fontSize: 18,
-              color: '#0a0c12',
-              flexShrink: 0,
-            }}
-          >
-            A
-          </div>
+          <img src="/favicon.svg" alt="Aira" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 7 }} />
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', lineHeight: 1.2 }}>
               Aira Studio

@@ -51,21 +51,27 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState(false)
   const handleCopy = () => {
-    navigator.clipboard.writeText(text).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setError(false)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {
+      setError(true)
+      setTimeout(() => setError(false), 3000)
+    })
   }
   return (
     <button
       onClick={handleCopy}
       style={{
-        background: copied ? 'var(--accent-dim)' : 'var(--surface-2)',
-        border: `1px solid ${copied ? 'var(--border-accent)' : 'var(--border)'}`,
+        background: error ? 'rgba(248,113,113,0.1)' : copied ? 'var(--accent-dim)' : 'var(--surface-2)',
+        border: `1px solid ${error ? 'rgba(248,113,113,0.3)' : copied ? 'var(--border-accent)' : 'var(--border)'}`,
         borderRadius: 6,
         padding: '5px 10px',
         cursor: 'pointer',
-        color: copied ? 'var(--accent)' : 'var(--text-muted)',
+        color: error ? 'var(--red)' : copied ? 'var(--accent)' : 'var(--text-muted)',
         display: 'flex',
         alignItems: 'center',
         gap: 4,
@@ -75,8 +81,8 @@ function CopyButton({ text }: { text: string }) {
         flexShrink: 0,
       }}
     >
-      {copied ? <Check size={12} /> : <Copy size={12} />}
-      {copied ? 'Copied' : 'Copy'}
+      {error ? <AlertCircle size={12} /> : copied ? <Check size={12} /> : <Copy size={12} />}
+      {error ? 'Copy failed' : copied ? 'Copied' : 'Copy'}
     </button>
   )
 }

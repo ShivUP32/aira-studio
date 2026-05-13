@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Headphones, BadgeDollarSign, GraduationCap, HelpCircle,
@@ -14,6 +14,7 @@ import type { Route } from '../App'
 
 interface BuilderProps {
   onNavigate: (route: Route) => void
+  editAgent?: Agent
 }
 
 const templateIcons: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -70,33 +71,45 @@ function KnowledgeStatusIcon({ status }: { status: KnowledgeItem['status'] }) {
   return <Clock size={14} color="var(--yellow)" />
 }
 
-export function Builder({ onNavigate }: BuilderProps) {
+export function Builder({ onNavigate, editAgent }: BuilderProps) {
   const { dispatch } = useApp()
   const [step, setStep] = useState(0)
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('support')
-  const [form, setForm] = useState<Omit<Agent, 'id' | 'knowledge' | 'published' | 'createdAt'>>({
-    name: '',
-    type: 'Support Agent',
-    description: '',
-    tone: 'Professional',
-    voice: 'en-US',
-    goal: '',
-    greeting: 'Hi! How can I help you today?',
-    fallback: "I'm not sure about that. Please contact our support team.",
-  })
-  const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(
+    editAgent ? (agentTemplates.find(tpl => tpl.type === editAgent.type)?.id ?? 'support') : 'support'
+  )
+  const [form, setForm] = useState<Omit<Agent, 'id' | 'knowledge' | 'published' | 'createdAt'>>(
+    editAgent
+      ? { name: editAgent.name, type: editAgent.type, description: editAgent.description, tone: editAgent.tone, voice: editAgent.voice, goal: editAgent.goal, greeting: editAgent.greeting, fallback: editAgent.fallback }
+      : {
+          name: '',
+          type: 'Support Agent',
+          description: '',
+          tone: 'Professional',
+          voice: 'en-US',
+          goal: '',
+          greeting: 'Hi! How can I help you today?',
+          fallback: "I'm not sure about that. Please contact our support team.",
+        }
+  )
+  const [knowledge, setKnowledge] = useState<KnowledgeItem[]>(editAgent ? editAgent.knowledge : [])
   const [faqText, setFaqText] = useState('')
   const [isDragging, setIsDragging] = useState(false)
 
+  // Generate a stable agent ID and creation timestamp so preview and saved agent match
+  const agentId = useMemo(() => editAgent?.id ?? makeId(), [editAgent?.id])
+  const createdAt = useMemo(() => editAgent?.createdAt ?? Date.now(), [editAgent?.createdAt])
+
   const builtAgent: Agent = {
-    id: makeId(),
+    id: agentId,
     ...form,
     knowledge,
     published: false,
-    createdAt: Date.now(),
+    createdAt,
   }
 
   const systemPrompt = buildSystemPrompt(builtAgent)
+
+  const selectedTemplateObj = agentTemplates.find(t => t.id === selectedTemplate)
 
   const handleTemplateSelect = (tplId: string) => {
     const tpl = agentTemplates.find(t => t.id === tplId)
@@ -136,8 +149,12 @@ export function Builder({ onNavigate }: BuilderProps) {
   }
 
   const handleSave = () => {
-    const agent: Agent = { ...builtAgent, id: makeId() }
-    dispatch({ type: 'CREATE_AGENT', agent })
+    const agent: Agent = { ...builtAgent, published: editAgent?.published ?? false }
+    if (editAgent) {
+      dispatch({ type: 'UPDATE_AGENT', agent })
+    } else {
+      dispatch({ type: 'CREATE_AGENT', agent })
+    }
     onNavigate('test')
   }
 
@@ -158,6 +175,12 @@ export function Builder({ onNavigate }: BuilderProps) {
     >
       {/* Main area */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        {editAgent && (
+          <motion.div variants={itemVariants} style={{ background: 'var(--accent-dim)', border: '1px solid var(--border-accent)', borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
+            Editing: {editAgent.name}
+          </motion.div>
+        )}
+
         {/* Step progress */}
         <motion.div variants={itemVariants} style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
           {STEPS.map((s, i) => (
@@ -480,6 +503,23 @@ export function Builder({ onNavigate }: BuilderProps) {
                 </div>
               </div>
 
+              {/* Skills included card */}
+              {selectedTemplateObj && selectedTemplateObj.skills?.length > 0 && (
+                <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-accent)', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                    Skills Included
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {selectedTemplateObj.skills.map((skill, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+                        <span style={{ color: 'var(--accent)' }}>✓</span>
+                        {skill}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* System prompt preview */}
               <div>
                 <label style={labelStyle()}>System Prompt Preview</label>
@@ -521,7 +561,7 @@ export function Builder({ onNavigate }: BuilderProps) {
             ) : (
               <Button variant="primary" onClick={handleSave}>
                 <Save size={16} />
-                Save & Test
+                {editAgent ? 'Save Changes' : 'Save & Test'}
               </Button>
             )}
           </div>
