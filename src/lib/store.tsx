@@ -4,6 +4,8 @@ import type { Agent, KnowledgeItem } from './data'
 
 export type { Agent, KnowledgeItem }
 
+const SCHEMA_VERSION = 2
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -15,12 +17,14 @@ export interface Message {
 export interface Conversation {
   id: string
   agentId: string
-  messages: Message[]
-  confidence: number
+  userQuery: string
+  assistantAnswer: string
+  confidence: number  // always 0–1
   timestamp: number
 }
 
 export interface AppState {
+  schemaVersion: number
   agents: Agent[]
   conversations: Conversation[]
   activeAgentId: string
@@ -32,7 +36,6 @@ type Action =
   | { type: 'UPDATE_AGENT'; agent: Agent }
   | { type: 'DELETE_AGENT'; id: string }
   | { type: 'ADD_CONVERSATION'; conversation: Conversation }
-  | { type: 'ADD_MESSAGE'; conversationId: string; message: Message }
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -49,15 +52,6 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'ADD_CONVERSATION':
       return { ...state, conversations: [...state.conversations, action.conversation] }
-    case 'ADD_MESSAGE':
-      return {
-        ...state,
-        conversations: state.conversations.map(c =>
-          c.id === action.conversationId
-            ? { ...c, messages: [...c.messages, action.message] }
-            : c
-        ),
-      }
     default:
       return state
   }
@@ -99,6 +93,7 @@ function defaultState(): AppState {
     createdAt: Date.now(),
   }
   return {
+    schemaVersion: SCHEMA_VERSION,
     agents: [agent1, agent2],
     conversations: [],
     activeAgentId: agent1.id,
@@ -113,8 +108,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         const parsed = JSON.parse(raw) as AppState
-        // Validate that parsed value has required agents array
         if (parsed && Array.isArray(parsed.agents)) {
+          // Reset conversations when schema version changes to clear stale/corrupt data
+          if (parsed.schemaVersion !== SCHEMA_VERSION) {
+            return { ...defaultState(), agents: parsed.agents, activeAgentId: parsed.activeAgentId ?? parsed.agents[0]?.id ?? '' }
+          }
           return parsed
         }
       }
