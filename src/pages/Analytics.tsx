@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   MessageSquare, TrendingUp, CheckCircle2, HelpCircle,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import type { Conversation } from '../lib/store'
+import { supabase } from '../lib/supabase'
 
 const containerVariants = {
   animate: { transition: { staggerChildren: 0.06 } },
@@ -120,7 +121,33 @@ function computeAnalytics(convs: Conversation[]) {
 
 export function Analytics() {
   const { state } = useApp()
-  const agentConvs = state.conversations.filter(c => c.agentId === state.activeAgentId)
+  const localConvs = state.conversations.filter(c => c.agentId === state.activeAgentId)
+  const [remoteConvs, setRemoteConvs] = useState<Conversation[] | null>(null)
+
+  useEffect(() => {
+    if (!state.activeAgentId) return
+    supabase
+      .from('conversations')
+      .select('agent_id,user_query,assistant_answer,confidence,created_at')
+      .eq('agent_id', state.activeAgentId)
+      .order('created_at', { ascending: false })
+      .limit(500)
+      .then(({ data, error }) => {
+        if (error || !data) return
+        setRemoteConvs(data.map(r => ({
+          id: r.created_at,
+          agentId: r.agent_id,
+          userQuery: r.user_query,
+          assistantAnswer: r.assistant_answer,
+          confidence: r.confidence,
+          timestamp: new Date(r.created_at).getTime(),
+        })))
+      })
+  }, [state.activeAgentId])
+
+  // Merge remote + local, deduplicate by userQuery+timestamp proximity
+  const agentConvs: Conversation[] = remoteConvs ?? localConvs
+
   const { total, avgConfidence, answeredPct, unknownCount, distribution, unknownQuestions, failedIntents, suggestions } = computeAnalytics(agentConvs)
   const maxCount = Math.max(...distribution.map(r => r.count), 1)
 

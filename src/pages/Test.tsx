@@ -411,6 +411,7 @@ export function Test({ onHasMessagesChange }: TestProps) {
         body: JSON.stringify({
           question: text.trim(),
           systemPrompt,
+          agentId: activeAgent?.id ?? '',
           agentName: activeAgent?.name ?? 'Aira Agent',
           priorMessageCount: conv.messages.filter(m => m.role === 'assistant').length,
           // Pass last 8 messages so the LLM has full conversation context.
