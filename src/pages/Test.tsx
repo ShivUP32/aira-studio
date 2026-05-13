@@ -74,6 +74,15 @@ function MarkdownText({ content, activeHeading }: { content: string; activeHeadi
     // Standalone separator lines — skip (never render)
     if (/^[=\-]{4,}\s*$/.test(line)) { i++; continue }
 
+    // Standalone bold line = visual heading (e.g. **Quiz Time**, **Active Voice**)
+    const boldHeading = line.trim().match(/^\*\*([^*]+)\*\*\s*$/)
+    if (boldHeading) {
+      const text = boldHeading[1]
+      const active = !!(activeHeading && text === activeHeading)
+      elements.push(<div key={i} style={HEADING_STYLE(active)}>{renderInline(text)}</div>)
+      i++; continue
+    }
+
     // ATX headings (## style)
     if (line.startsWith('## ')) {
       const text = line.slice(3)
@@ -197,7 +206,9 @@ export function Test({ onHasMessagesChange }: TestProps) {
       .replace(/```[\s\S]*?```/g, '')
       // Inline code → just read the content without backticks
       .replace(/`([^`]+)`/g, '$1')
-      // Bold / italic → read the word, drop symbols
+      // Standalone bold line = visual heading → pause before and after (must run before inline bold strip)
+      .replace(/^\*\*([^*]+)\*\*\s*$/gm, '. $1. ')
+      // Remaining inline bold / italic → read the word, drop symbols
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/\*([^*]+)\*/g, '$1')
       // Blockquotes → read content (> means "quoted text", not a symbol)
@@ -236,6 +247,8 @@ export function Test({ onHasMessagesChange }: TestProps) {
     const useVoice = voiceEnabledRef.current
 
     if (useVoice) {
+      // Resume in case Chrome suspended synthesis in the background
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume()
       const utt = new SpeechSynthesisUtterance(clean)
       if (selectedVoiceRef.current) utt.voice = selectedVoiceRef.current
       utt.rate = 1.0
@@ -318,7 +331,7 @@ export function Test({ onHasMessagesChange }: TestProps) {
     } catch { /* ignore */ }
   }, [conv.messages, activeAgent?.id])
 
-  // Track active heading from streaming content (ATX ## and setext underline styles)
+  // Track active heading from streaming content — supports ## ATX, setext ===/--, and **standalone bold**
   useEffect(() => {
     if (streamingContent) {
       const lines = streamingContent.split('\n')
@@ -332,6 +345,9 @@ export function Test({ onHasMessagesChange }: TestProps) {
           lastHeading = line.slice(3)
         } else if (line.startsWith('# ')) {
           lastHeading = line.slice(2)
+        } else {
+          const m = line.trim().match(/^\*\*([^*]+)\*\*\s*$/)
+          if (m) lastHeading = m[1]
         }
       }
       setActiveHeading(lastHeading)
@@ -485,7 +501,20 @@ export function Test({ onHasMessagesChange }: TestProps) {
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
-              onClick={() => { setVoiceEnabled(v => { voiceEnabledRef.current = !v; return !v }); window.speechSynthesis?.cancel() }}
+              onClick={() => {
+                setVoiceEnabled(v => {
+                  const next = !v
+                  voiceEnabledRef.current = next
+                  if (!next) {
+                    // Turning OFF: stop any current speech
+                    window.speechSynthesis?.cancel()
+                  } else {
+                    // Turning ON: un-pause synthesis in case Chrome suspended it
+                    if (window.speechSynthesis?.paused) window.speechSynthesis.resume()
+                  }
+                  return next
+                })
+              }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: voiceEnabled ? 'var(--accent)' : 'var(--text-muted)', padding: 6, borderRadius: 6 }}
               title={voiceEnabled ? 'Voice on — click to mute' : 'Voice off — click to enable'}
             >
