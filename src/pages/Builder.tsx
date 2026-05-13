@@ -102,6 +102,8 @@ export function Builder({ onNavigate }: BuilderProps) {
 
   const systemPrompt = buildSystemPrompt(builtAgent)
 
+  const selectedTemplateObj = agentTemplates.find(t => t.id === selectedTemplate)
+
   const handleTemplateSelect = (tplId: string) => {
     const tpl = agentTemplates.find(t => t.id === tplId)
     if (!tpl) return
@@ -483,6 +485,23 @@ export function Builder({ onNavigate }: BuilderProps) {
                   ))}
                 </div>
               </div>
+
+              {/* Skills included card */}
+              {selectedTemplateObj && selectedTemplateObj.skills?.length > 0 && (
+                <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-accent)', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                    Skills Included
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {selectedTemplateObj.skills.map((skill, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+                        <span style={{ color: 'var(--accent)' }}>✓</span>
+                        {skill}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* System prompt preview */}
               <div>

@@ -33,12 +33,56 @@ You are an AI assistant committed to responsible and ethical behavior. You must 
 - Treat all users with dignity and respect
 - When declining a request, explain why clearly and suggest legitimate alternatives when possible`
 
+const AGENT_SKILLS: Record<string, string> = {
+  'Support Agent': `## Skills & Interaction Patterns
+
+**Role:** Empathetic problem resolver
+- Acknowledge the issue before solving it — lead with empathy, not solutions
+- Categorize issues mentally: billing, technical, account, or general
+- If unable to resolve within 2 turns, offer human escalation: "Would you like me to connect you with a team member?"
+- Always confirm resolution: "Does that resolve your issue?"
+- Never speculate on bugs, timelines, or root causes — say "I'll note this for the team"
+- Keep responses concise — support users are often frustrated and want fast answers`,
+
+  'Sales Assistant': `## Skills & Interaction Patterns
+
+**Role:** Consultative sales guide
+- Qualify leads naturally using BANT signals (Budget, Authority, Need, Timeline) woven into conversation
+- Surface product features relevant to the user's stated pain points
+- Never fabricate pricing — only use pricing from the knowledge base
+- Handle objections: acknowledge → reframe → offer proof point
+- End every exchange with a soft CTA: offer a demo, trial, or clear next step
+- Be enthusiastic but never pushy — guide, don't pressure`,
+
+  'Learning Companion': `## Skills & Interaction Patterns
+
+**Role:** Socratic tutor and learning guide
+- Use Socratic questioning before giving answers — ask "What do you think happens if...?"
+- Scaffold complexity: check current understanding before advancing to next concept
+- Celebrate progress explicitly: "That's exactly right! Now let's take it further..."
+- Break multi-part questions into numbered steps
+- Offer analogies when explaining abstract concepts
+- Do not just give answers — guide the learner toward discovery
+- After each explanation, ask one follow-up question to check understanding`,
+
+  'FAQ Assistant': `## Skills & Interaction Patterns
+
+**Role:** Precise FAQ lookup and routing
+- Match the user's question to the closest FAQ topic and state the match explicitly
+- If no FAQ match exists, say so clearly and use the configured fallback
+- Keep answers to 2-3 sentences maximum — link to longer docs if available in context
+- After answering, offer 2-3 related questions the user might also have
+- Never invent FAQ content not present in the knowledge base
+- If the user asks something outside scope, redirect politely to what you do cover`,
+}
+
 export interface AgentTemplate {
   id: string
   name: string
   icon: string
   description: string
   type: string
+  skills: string[]
 }
 
 export const agentTemplates: AgentTemplate[] = [
@@ -48,6 +92,7 @@ export const agentTemplates: AgentTemplate[] = [
     icon: "headphones",
     description: "Answer customer questions from product docs",
     type: "Support Agent",
+    skills: ['Empathetic issue acknowledgment', 'Issue categorization', 'Human escalation routing', 'Resolution confirmation'],
   },
   {
     id: "sales",
@@ -55,6 +100,7 @@ export const agentTemplates: AgentTemplate[] = [
     icon: "badge-dollar-sign",
     description: "Qualify leads and answer product/pricing questions",
     type: "Sales Assistant",
+    skills: ['BANT lead qualification', 'Objection handling', 'Feature-to-pain-point matching', 'Soft CTA generation'],
   },
   {
     id: "learning",
@@ -62,6 +108,7 @@ export const agentTemplates: AgentTemplate[] = [
     icon: "graduation-cap",
     description: "Guide learners through educational content",
     type: "Learning Companion",
+    skills: ['Socratic questioning', 'Step-by-step scaffolding', 'Progress celebration', 'Concept analogies'],
   },
   {
     id: "faq",
@@ -69,6 +116,7 @@ export const agentTemplates: AgentTemplate[] = [
     icon: "help-circle",
     description: "Answer common questions instantly",
     type: "FAQ Assistant",
+    skills: ['FAQ topic matching', 'Concise scoped answers', 'Related question suggestions', 'Graceful out-of-scope redirection'],
   },
 ]
 
@@ -96,6 +144,7 @@ export interface KnowledgeItem {
 
 export function buildSystemPrompt(agent: Agent): string {
   const knowledgeTitles = agent.knowledge.map(k => `- ${k.title} (${k.chunks} chunks)`).join('\n')
+  const skillsBlock = AGENT_SKILLS[agent.type] ?? `## Skills & Interaction Patterns\n\nBe helpful, concise, and professional. Stay within the scope of your knowledge base.`
   return `${GUARDRAILS_PROMPT}
 
 ## Agent Configuration
@@ -116,6 +165,8 @@ ${agent.fallback || "I'm sorry, I don't have information about that. Please cont
 
 ## Knowledge Base
 ${knowledgeTitles || 'No knowledge items uploaded yet.'}
+
+${skillsBlock}
 
 ## Instructions
 - Answer questions based on the provided knowledge base
