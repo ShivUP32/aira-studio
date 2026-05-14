@@ -135,7 +135,7 @@ export function Analytics() {
       select: 'agent_id,user_query,assistant_answer,confidence,created_at',
     })
 
-    fetch(`${supabaseUrl}/rest/v1/conversations?${params}`, {
+    fetch(`${supabaseUrl}/rest/v1/aira_conversations?${params}`, {
       headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
     })
       .then(r => r.json())

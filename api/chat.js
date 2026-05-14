@@ -10,7 +10,7 @@ async function saveToSupabase({ agentId, agentName, userQuery, assistantAnswer, 
   const key = process.env.SUPABASE_ANON_KEY;
   if (!url || !key) { console.warn("[supabase] missing SUPABASE_URL or SUPABASE_ANON_KEY"); return; }
   try {
-    const res = await fetch(`${url}/rest/v1/conversations`, {
+    const res = await fetch(`${url}/rest/v1/aira_conversations`, {
       method: "POST",
       headers: {
         "apikey": key,
